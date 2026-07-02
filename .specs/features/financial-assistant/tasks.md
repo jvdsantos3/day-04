@@ -124,7 +124,7 @@
 - **Verify**: `tests/unit/test_indexer.py`
 - **Commit**: `feat: add write-through vector indexer`
 
-### T15: Knowledge base + category examples seed
+### T15: Knowledge base + category examples seed ✅ done
 - **Requirement**: CONV-01, VEC-03
 - **Action**: Indexar docs das 5 categorias + faixas + exemplos em `knowledge_base`; seed inicial de descrições rotuladas em `category_examples`
 - **Verify**: `query_knowledge("custos fixos")` returns relevant doc; `find_similar_transactions("mercado")` returns category match
