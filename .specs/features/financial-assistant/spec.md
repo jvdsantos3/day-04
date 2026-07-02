@@ -672,9 +672,9 @@ Fixture de teste para cenário 3: receita R$ 5.000 + despesas desbalanceadas (Cu
 | TBL-01         | P1: Tabela             | Design | Pending |
 | TBL-02         | P1: Tabela             | Design | Pending |
 | TBL-03         | P1: Tabela             | Design | Pending |
-| BUD-01         | P1: Orçamento          | Design | Pending |
-| BUD-02         | P1: Orçamento          | Design | Pending |
-| BUD-03         | P1: Orçamento          | Design | Pending |
+| BUD-01         | P1: Orçamento          | T4, T10 | Partial |
+| BUD-02         | P1: Orçamento          | T10    | Partial |
+| BUD-03         | P1: Orçamento          | T10    | Partial |
 | ORCH-01        | P1: Orquestração       | Design | Pending |
 | ORCH-02        | P1: Orquestração       | Design | Pending |
 | VAL-01         | P1: Validação          | Design | Pending |
@@ -703,7 +703,7 @@ Fixture de teste para cenário 3: receita R$ 5.000 + despesas desbalanceadas (Cu
 | WEB-05         | P1: Dashboard          | Design | Pending |
 | CONV-01        | P1: Conversação        | Design | Pending |
 | CONV-02        | P1: Conversação        | Design | Pending |
-| CONV-03        | P1: Conversação        | Design | Pending |
+| CONV-03        | P1: Conversação        | T10    | Partial |
 | CONV-04        | P1: Conversação        | Design | Pending |
 | CONV-05        | P1: Conversação        | Design | Pending |
 

@@ -90,7 +90,7 @@
 - **Verify**: `tests/unit/test_transaction_repository.py`
 - **Commit**: `feat: add transaction repository`
 
-### T10: BudgetService
+### T10: BudgetService ✅ done (`f7b1878`)
 - **Requirement**: BUD-01, BUD-02, BUD-03, CONV-03
 - **Action**: `get_summary(user_id, month)` → % por categoria, status ok/alerta, margem
 - **Verify**: `tests/unit/test_budget_service.py` — fixture desbalanceada
