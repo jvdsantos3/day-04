@@ -106,7 +106,7 @@
 
 ## Phase 4 — Vector Store
 
-### T12: ChromaDB client setup
+### T12: ChromaDB client setup ✅ done
 - **Requirement**: VEC-01
 - **Action**: Persistent client, 5 collections: `transactions`, `chat_memory`, `knowledge_base`, `category_examples`, `working_memory`
 - **Verify**: `tests/unit/test_chroma_client.py`
