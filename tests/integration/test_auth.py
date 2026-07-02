@@ -1,13 +1,20 @@
-"""Integration tests for user registration (T6).
+"""Integration tests for registration and login/logout (T6, T7).
 
-Derived from spec AUTH-01, AUTH-02 and the "senha < 8 caracteres" edge case:
+Registration (T6) — spec AUTH-01, AUTH-02 + "senha < 8 caracteres" edge case:
 
 - AUTH-01: valid name/email/password -> account with bcrypt-hashed password,
   budget targets seeded, redirect to the dashboard.
 - AUTH-02: duplicate email -> rejected with the message "Email já cadastrado".
 - Edge case: password shorter than 8 chars -> registration rejected (validation).
 
-The register endpoint persists to SQLite; these tests point it at an in-memory
+Login/session (T7) — spec AUTH-03, AUTH-04, AUTH-05:
+
+- AUTH-03: correct credentials -> JWT in an httpOnly cookie + redirect dashboard.
+- AUTH-04: wrong credentials -> generic error that does not reveal whether the
+  email exists (same message for wrong password and unknown email).
+- AUTH-05: unauthenticated access to a protected route -> redirect to /login.
+
+The endpoints persist to SQLite; these tests point them at an in-memory
 database via a dependency override so they stay isolated and parallel-safe.
 """
 
@@ -122,3 +129,134 @@ def test_get_register_renders_form(client):
     assert 'name="name"' in body
     assert 'name="email"' in body
     assert 'name="password"' in body
+
+
+# --- T7: login / logout / route protection -------------------------------
+
+
+def _register(test_client, **overrides):
+    """Register VALID (with optional overrides) and assert it succeeded."""
+    data = {**VALID, **overrides}
+    resp = test_client.post("/register", data=data, follow_redirects=False)
+    assert resp.status_code == 303
+    return data
+
+
+def test_get_login_renders_form(client):
+    test_client, _ = client
+
+    resp = test_client.get("/login")
+
+    assert resp.status_code == 200
+    body = resp.text
+    # The login form collects email and password (spec AUTH-03).
+    assert 'name="email"' in body
+    assert 'name="password"' in body
+
+
+def test_login_success(client):
+    test_client, _ = client
+    _register(test_client)
+
+    resp = test_client.post(
+        "/login",
+        data={"email": VALID["email"], "password": VALID["password"]},
+        follow_redirects=False,
+    )
+
+    # AUTH-03: valid login redirects to the dashboard...
+    assert resp.status_code == 303
+    assert resp.headers["location"] == "/dashboard"
+    # ...and issues a JWT session cookie that is httpOnly + SameSite=Lax.
+    set_cookie = resp.headers["set-cookie"].lower()
+    assert "access_token=" in set_cookie
+    assert "httponly" in set_cookie
+    assert "samesite=lax" in set_cookie
+    # The cookie value must not be the raw password / email (it is a signed JWT).
+    token = test_client.cookies.get("access_token")
+    assert token and VALID["password"] not in token
+
+
+def test_login_grants_access_to_protected_route(client):
+    test_client, _ = client
+    _register(test_client)
+
+    test_client.post(
+        "/login",
+        data={"email": VALID["email"], "password": VALID["password"]},
+        follow_redirects=False,
+    )
+    # The session cookie authenticates subsequent requests (AUTH-03 round-trip).
+    resp = test_client.get("/dashboard")
+
+    assert resp.status_code == 200
+    assert VALID["name"] in resp.text
+
+
+def test_login_invalid_password_generic_error(client):
+    test_client, _ = client
+    _register(test_client)
+
+    resp = test_client.post(
+        "/login",
+        data={"email": VALID["email"], "password": "senha-errada-8"},
+        follow_redirects=False,
+    )
+
+    # AUTH-04: rejected, no session cookie, generic message.
+    assert resp.status_code == 400
+    assert "access_token" not in resp.headers.get("set-cookie", "")
+    assert "Email ou senha inválidos" in resp.text
+
+
+def test_login_unknown_email_uses_same_generic_error(client):
+    """AUTH-04: an unknown email must not be distinguishable from a wrong password."""
+    test_client, _ = client
+    _register(test_client)
+
+    wrong_pw = test_client.post(
+        "/login",
+        data={"email": VALID["email"], "password": "senha-errada-8"},
+        follow_redirects=False,
+    )
+    unknown_email = test_client.post(
+        "/login",
+        data={"email": "ninguem@example.com", "password": VALID["password"]},
+        follow_redirects=False,
+    )
+
+    assert unknown_email.status_code == wrong_pw.status_code == 400
+    # Same status and same message -> existence of the email is not leaked.
+    assert "Email ou senha inválidos" in unknown_email.text
+    assert "access_token" not in unknown_email.headers.get("set-cookie", "")
+
+
+def test_protected_route_redirect(client):
+    test_client, _ = client
+
+    resp = test_client.get("/dashboard", follow_redirects=False)
+
+    # AUTH-05: unauthenticated access to a protected route redirects to /login.
+    assert resp.status_code in (302, 307)
+    assert resp.headers["location"].startswith("/login")
+
+
+def test_logout_clears_session(client):
+    test_client, _ = client
+    _register(test_client)
+    test_client.post(
+        "/login",
+        data={"email": VALID["email"], "password": VALID["password"]},
+        follow_redirects=False,
+    )
+
+    resp = test_client.post("/logout", follow_redirects=False)
+
+    # Logout redirects to /login and clears the session cookie.
+    assert resp.status_code == 303
+    assert resp.headers["location"] == "/login"
+    # After logout the protected route is no longer reachable.
+    assert test_client.cookies.get("access_token") in (None, "")
+    after = test_client.get("/dashboard", follow_redirects=False)
+    assert after.status_code in (302, 307)
+    assert after.headers["location"].startswith("/login")
