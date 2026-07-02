@@ -37,10 +37,12 @@
 ## Handoff
 
 - **Feature**: financial-assistant / `.specs/features/financial-assistant/`
-- **Phase / Task**: Design + Tasks completos — aguardando aprovação para Execute T1
-- **Completed**: Specify, Design, Tasks
+- **Phase / Task**: Phase 1 — T2 (config module) concluída; próxima T3 (SQLAlchemy models + Alembic init)
+- **Completed**: Specify, Design, Tasks, T1, T2
 - **In-progress**: none
-- **Next step**: Usuário aprovar design/tasks → iniciar T1 (scaffold)
+- **Next step**: Executar T3 — models User/Transaction/BudgetTarget/ChatSession/ChatMessage + migration Alembic
 - **Blockers**: none
-- **Uncommitted files**: `.specs/**`
-- **Branch**: _(none yet)_
+- **Uncommitted files**: none
+- **Spec-precision gap (T2)**: `JWT_EXPIRE_MINUTES=1440` e `DEEPSEEK_BASE_URL=https://api.deepseek.com` sem valor definido na spec — defaults escolhidos na implementação
+- **Branch**: `master` (git repo inicializado em T1)
+- **Env note**: sistema sem `python3-venv`/`ensurepip`; venv em `.venv/` com pip via `get-pip.py`. Usar `.venv/bin/python` para todos os comandos.

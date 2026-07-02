@@ -28,13 +28,13 @@
 
 ## Phase 1 — Foundation
 
-### T1: Project scaffold [P]
+### T1: Project scaffold [P] ✅ done (`a3b0e1d`)
 - **Requirement**: infra
 - **Action**: Criar `pyproject.toml`, estrutura `src/`, `.env.example`, `pytest.ini` com markers
 - **Verify**: `pip install -e ".[dev]"` succeeds
 - **Commit**: `chore: scaffold project structure`
 
-### T2: Config module
+### T2: Config module ✅ done
 - **Requirement**: infra
 - **Action**: `config.py` com pydantic-settings (DATABASE_URL, CHROMA_PATH, JWT_SECRET, DEEPSEEK_API_KEY)
 - **Verify**: `tests/unit/test_config.py` — loads from env
