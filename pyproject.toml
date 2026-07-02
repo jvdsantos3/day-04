@@ -20,6 +20,7 @@ dependencies = [
     "langchain-openai",
     "chromadb",
     "langchain-huggingface",
+    "sentence-transformers",
     "langchain-mcp-adapters",
     "jinja2",
     "python-multipart",
