@@ -37,13 +37,14 @@
 ## Handoff
 
 - **Feature**: financial-assistant / `.specs/features/financial-assistant/`
-- **Phase / Task**: Phase 1 — T3 (SQLAlchemy models + Alembic init) concluída (`6dfd2eb`); próxima T4 (BudgetCategory enum já criado em models.py + seed defaults)
-- **Completed**: Specify, Design, Tasks, T1, T2, T3
+- **Phase / Task**: Phase 1 concluída — T4 (BudgetCategory enum + defaults seed) done; próxima T5 (password hashing, início da Phase 2 — Auth)
+- **Completed**: Specify, Design, Tasks, T1, T2, T3, T4
 - **In-progress**: none
-- **Next step**: Executar T4 — `seed_budget_targets(user_id)` com defaults somando 90% + teste `tests/unit/test_budget_defaults.py`
+- **Next step**: Executar T5 — bcrypt hash/verify em `auth/service.py` + `tests/unit/test_auth_service.py`
 - **Blockers**: none
 - **Uncommitted files**: none
 - **T3 note**: `BudgetCategory`/`TransactionType` enums vivem em `domain/models.py`; T4 reutiliza `BudgetCategory` (não recriar). `Transaction.category` é nullable no DB; invariante tipo↔categoria fica no contrato Pydantic `TransactionCreate` (T11), conforme design. Alembic: `script_location` em `alembic.ini`; `env.py` lê `database_url` de `get_settings()` e importa `domain.models` para autogenerate. Rodar migrations com `.venv/bin/alembic upgrade head` (precisa `data/` existir — gitignored).
 - **Spec-precision gap (T2)**: `JWT_EXPIRE_MINUTES=1440` e `DEEPSEEK_BASE_URL=https://api.deepseek.com` sem valor definido na spec — defaults escolhidos na implementação
+- **Spec-precision gap (T4)**: Prazeres é `≥ 5%` (sem teto na spec) mas `BudgetTarget.max_pct` é float não-nulável → teto modelado como `100.0` em `domain/budget_defaults.py`. BudgetService (T10) deve tratar Prazeres como sem-alerta-por-excesso.
 - **Branch**: `master` (git repo inicializado em T1)
 - **Env note**: sistema sem `python3-venv`/`ensurepip`; venv em `.venv/` com pip via `get-pip.py`. Usar `.venv/bin/python` para todos os comandos.
