@@ -84,7 +84,7 @@
 
 ## Phase 3 — Domain Services
 
-### T9: TransactionRepository
+### T9: TransactionRepository ✅ done (`344a5f1`)
 - **Requirement**: CHAT-01, TBL-01, VEC-05
 - **Action**: CRUD filtrado por user_id + month + category; `search_by_description(user_id, query)` via SQL LIKE para fallback semântico
 - **Verify**: `tests/unit/test_transaction_repository.py`
@@ -112,7 +112,7 @@
 - **Verify**: `tests/unit/test_chroma_client.py`
 - **Commit**: `feat: add chromadb client`
 
-### T13: Embedding model loader
+### T13: Embedding model loader ✅ done (`8572145`)
 - **Requirement**: VEC-01
 - **Action**: HuggingFaceEmbeddings multilingual-e5-small singleton
 - **Verify**: embedding dimension == 384
