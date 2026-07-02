@@ -62,7 +62,7 @@
 - **Verify**: `tests/unit/test_auth_service.py`
 - **Commit**: `feat: add password hashing`
 
-### T6: Register endpoint + template
+### T6: Register endpoint + template ✅ done (`4905641`)
 - **Requirement**: AUTH-01, AUTH-02
 - **Action**: `POST /register`, `GET /register`, validation min 8 chars, duplicate email
 - **Verify**: `tests/integration/test_auth.py::test_register_success`
