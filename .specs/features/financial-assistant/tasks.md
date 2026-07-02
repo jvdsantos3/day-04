@@ -96,7 +96,7 @@
 - **Verify**: `tests/unit/test_budget_service.py` — fixture desbalanceada
 - **Commit**: `feat: add budget summary service`
 
-### T11: Pydantic contracts
+### T11: Pydantic contracts ✅ done (`49e9925`, fix `1b06036`)
 - **Requirement**: VAL-01, VAL-02, CHAT-02
 - **Action**: `TransactionCreate` (category obrigatório para despesa, proibido para receita), `BudgetSummary`, `AgentResponse`, `IntentClassification`
 - **Verify**: `tests/unit/test_contracts.py`

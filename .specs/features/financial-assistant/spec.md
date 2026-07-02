@@ -667,7 +667,7 @@ Fixture de teste para cenário 3: receita R$ 5.000 + despesas desbalanceadas (Cu
 | Requirement ID | Story                  | Phase  | Status  |
 | -------------- | ---------------------- | ------ | ------- |
 | CHAT-01        | P1: Registrar via chat | Design | Pending |
-| CHAT-02        | P1: Registrar via chat | Design | Pending |
+| CHAT-02        | P1: Registrar via chat | T11    | Partial |
 | CHAT-03        | P1: Registrar via chat | Design | Pending |
 | TBL-01         | P1: Tabela             | Design | Pending |
 | TBL-02         | P1: Tabela             | Design | Pending |
@@ -677,8 +677,8 @@ Fixture de teste para cenário 3: receita R$ 5.000 + despesas desbalanceadas (Cu
 | BUD-03         | P1: Orçamento          | T10    | Partial |
 | ORCH-01        | P1: Orquestração       | Design | Pending |
 | ORCH-02        | P1: Orquestração       | Design | Pending |
-| VAL-01         | P1: Validação          | Design | Pending |
-| VAL-02         | P1: Validação          | Design | Pending |
+| VAL-01         | P1: Validação          | T11    | Partial |
+| VAL-02         | P1: Validação          | T11    | Partial |
 | VAL-03         | P1: Validação          | Design | Pending |
 | INS-01         | P2: Insights           | -      | Pending |
 | VEC-01         | P1: ChromaDB           | T12, T14 | Partial |
