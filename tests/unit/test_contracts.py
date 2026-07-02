@@ -172,7 +172,7 @@ def test_intent_classification_accepts_known_intent_and_confidence():
 
 def test_intent_classification_rejects_confidence_out_of_range():
     with pytest.raises(ValidationError):
-        IntentClassification(intent=Intent.BUDGET_STATUS, confidence=1.5)
+        IntentClassification(intent=Intent.BUDGET_ADVICE, confidence=1.5)
 
 
 def test_intent_classification_rejects_unknown_intent():
@@ -180,16 +180,26 @@ def test_intent_classification_rejects_unknown_intent():
         IntentClassification(intent="fazer_cafe", confidence=0.5)
 
 
-def test_agent_response_accepts_reply_with_optional_data():
+def test_agent_response_defaults_to_no_action_and_empty_metadata():
+    response = AgentResponse(text="Você gastou 50% em Custos Fixos este mês.")
+
+    assert response.action == "none"
+    assert response.metadata == {}
+    assert response.suggested_category is None
+
+
+def test_agent_response_accepts_offer_register_with_suggested_category():
     response = AgentResponse(
-        reply="Você gastou 50% em Custos Fixos este mês.",
-        intent=Intent.BUDGET_STATUS,
-        data={"month": "2026-07"},
+        text="Isso parece um gasto em Prazeres. Deseja registrar?",
+        suggested_category=BudgetCategory.PLEASURES,
+        action="offer_register",
+        metadata={"amount": "150.00"},
     )
 
-    assert response.data == {"month": "2026-07"}
+    assert response.suggested_category is BudgetCategory.PLEASURES
+    assert response.action == "offer_register"
 
 
-def test_agent_response_rejects_empty_reply():
+def test_agent_response_rejects_unknown_action():
     with pytest.raises(ValidationError):
-        AgentResponse(reply="", intent=Intent.GENERAL_QUESTION)
+        AgentResponse(text="ok", action="pendente")
