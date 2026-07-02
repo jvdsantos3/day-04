@@ -13,7 +13,7 @@ dependencies = [
     "sqlalchemy",
     "alembic",
     "pydantic-settings",
-    "passlib[bcrypt]",
+    "bcrypt",
     "python-jose",
     "langchain",
     "langgraph",
