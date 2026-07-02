@@ -21,3 +21,15 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False
 
 class Base(DeclarativeBase):
     """Declarative base shared by all ORM models."""
+
+
+def get_db():
+    """FastAPI dependency yielding a request-scoped session.
+
+    Tests override this to point at an isolated in-memory database.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
