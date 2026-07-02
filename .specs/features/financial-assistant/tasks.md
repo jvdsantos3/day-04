@@ -40,7 +40,7 @@
 - **Verify**: `tests/unit/test_config.py` — loads from env
 - **Commit**: `feat: add application settings`
 
-### T3: SQLAlchemy models + Alembic init
+### T3: SQLAlchemy models + Alembic init ✅ done (`6dfd2eb`)
 - **Requirement**: AUTH-01, CHAT-01, CHAT-02
 - **Action**: Models User, Transaction (`category` nullable — NULL para receitas), BudgetTarget, ChatSession, ChatMessage
 - **Verify**: Migration applies; tables exist

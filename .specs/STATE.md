@@ -37,12 +37,13 @@
 ## Handoff
 
 - **Feature**: financial-assistant / `.specs/features/financial-assistant/`
-- **Phase / Task**: Phase 1 — T2 (config module) concluída; próxima T3 (SQLAlchemy models + Alembic init)
-- **Completed**: Specify, Design, Tasks, T1, T2
+- **Phase / Task**: Phase 1 — T3 (SQLAlchemy models + Alembic init) concluída (`6dfd2eb`); próxima T4 (BudgetCategory enum já criado em models.py + seed defaults)
+- **Completed**: Specify, Design, Tasks, T1, T2, T3
 - **In-progress**: none
-- **Next step**: Executar T3 — models User/Transaction/BudgetTarget/ChatSession/ChatMessage + migration Alembic
+- **Next step**: Executar T4 — `seed_budget_targets(user_id)` com defaults somando 90% + teste `tests/unit/test_budget_defaults.py`
 - **Blockers**: none
 - **Uncommitted files**: none
+- **T3 note**: `BudgetCategory`/`TransactionType` enums vivem em `domain/models.py`; T4 reutiliza `BudgetCategory` (não recriar). `Transaction.category` é nullable no DB; invariante tipo↔categoria fica no contrato Pydantic `TransactionCreate` (T11), conforme design. Alembic: `script_location` em `alembic.ini`; `env.py` lê `database_url` de `get_settings()` e importa `domain.models` para autogenerate. Rodar migrations com `.venv/bin/alembic upgrade head` (precisa `data/` existir — gitignored).
 - **Spec-precision gap (T2)**: `JWT_EXPIRE_MINUTES=1440` e `DEEPSEEK_BASE_URL=https://api.deepseek.com` sem valor definido na spec — defaults escolhidos na implementação
 - **Branch**: `master` (git repo inicializado em T1)
 - **Env note**: sistema sem `python3-venv`/`ensurepip`; venv em `.venv/` com pip via `get-pip.py`. Usar `.venv/bin/python` para todos os comandos.
