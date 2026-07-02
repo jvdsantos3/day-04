@@ -695,7 +695,7 @@ Fixture de teste para cenário 3: receita R$ 5.000 + despesas desbalanceadas (Cu
 | AUTH-03        | P1: Auth               | T7     | Done    |
 | AUTH-04        | P1: Auth               | T7     | Done    |
 | AUTH-05        | P1: Auth               | T7     | Done    |
-| AUTH-06        | P1: Auth               | Design | Pending |
+| AUTH-06        | P1: Auth               | T8     | Done    |
 | WEB-01         | P1: Dashboard          | Design | Pending |
 | WEB-02         | P1: Dashboard          | Design | Pending |
 | WEB-03         | P1: Dashboard          | Design | Pending |

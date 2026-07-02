@@ -74,7 +74,7 @@
 - **Verify**: `test_login_success`, `test_login_invalid`, `test_protected_route_redirect`
 - **Commit**: `feat: add login and session management`
 
-### T8: Auth dependency get_current_user
+### T8: Auth dependency get_current_user ✅ done
 - **Requirement**: AUTH-06
 - **Action**: FastAPI dependency injeta `User` em rotas protegidas
 - **Verify**: `test_user_isolation_in_repository`
