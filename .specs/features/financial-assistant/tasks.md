@@ -56,7 +56,7 @@
 
 ## Phase 2 — Auth
 
-### T5: Password hashing utility
+### T5: Password hashing utility ✅ done (`db36fd6`)
 - **Requirement**: AUTH-01
 - **Action**: bcrypt hash/verify in `auth/service.py`
 - **Verify**: `tests/unit/test_auth_service.py`
