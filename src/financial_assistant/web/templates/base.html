@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Assistente Financeiro{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+</head>
+<body>
+  {% if user %}
+  <header class="navbar">
+    <span class="navbar-user">Olá, {{ user.name }}</span>
+    <nav class="navbar-nav">
+      <a href="/chat">Chat</a>
+      <form method="post" action="/logout" class="navbar-logout">
+        <button type="submit">Logout</button>
+      </form>
+    </nav>
+  </header>
+  {% endif %}
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
