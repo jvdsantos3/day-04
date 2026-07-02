@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "financial-assistant"
+version = "0.1.0"
+description = "Assistente Financeiro multi-agente (FastAPI + LangGraph + ChromaDB)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "sqlalchemy",
+    "alembic",
+    "pydantic-settings",
+    "passlib[bcrypt]",
+    "python-jose",
+    "langchain",
+    "langgraph",
+    "langchain-openai",
+    "chromadb",
+    "langchain-huggingface",
+    "langchain-mcp-adapters",
+    "jinja2",
+    "httpx",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
