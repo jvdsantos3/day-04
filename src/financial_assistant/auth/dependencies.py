@@ -1,8 +1,15 @@
-"""Auth dependency — resolve the current user from the JWT session cookie (T7).
+"""Auth dependency — resolve the current user from the JWT session cookie.
 
-Realises AUTH-05: an unauthenticated request to a protected route is redirected
-to ``/login?next=<path>`` (raised as a 302 so route handlers never run without a
-user). T8 builds on this for repository-level user isolation (AUTH-06).
+Two entry points share the same token → user resolution but differ in how they
+reject an unauthenticated request:
+
+- :func:`get_current_user` (web routes) redirects to ``/login?next=<path>``
+  (302), realising AUTH-05 so browser navigations land on the login form.
+- :func:`get_current_user_api` (API routes) raises ``401 Unauthorized`` so
+  programmatic callers get a status code instead of an HTML redirect.
+
+Both make the authenticated ``user_id`` the mandatory scoping key for every
+downstream data access (AUTH-06).
 """
 
 import uuid
@@ -27,26 +34,56 @@ def _redirect_to_login(request: Request) -> HTTPException:
     )
 
 
-def get_current_user(
-    request: Request,
-    db: Session = Depends(get_db),
-) -> User:
-    """Return the authenticated :class:`User` or redirect to /login (AUTH-05)."""
+def _resolve_user(request: Request, db: Session) -> User | None:
+    """Resolve the session cookie to a :class:`User`, or ``None`` if invalid.
+
+    Returns ``None`` for a missing, malformed, or expired token, or when the
+    token's subject no longer maps to a user. Callers decide how to reject.
+    """
     token = request.cookies.get(SESSION_COOKIE_NAME)
     if not token:
-        raise _redirect_to_login(request)
+        return None
 
     subject = decode_access_token(token)
     if subject is None:
-        raise _redirect_to_login(request)
+        return None
 
     try:
         user_id = uuid.UUID(subject)
     except ValueError:
-        raise _redirect_to_login(request)
+        return None
 
-    user = db.get(User, user_id)
+    return db.get(User, user_id)
+
+
+def get_current_user(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> User:
+    """Return the authenticated :class:`User` or redirect to /login (AUTH-05).
+
+    For browser-facing (web) routes: an unauthenticated request is redirected
+    to the login form.
+    """
+    user = _resolve_user(request, db)
     if user is None:
         raise _redirect_to_login(request)
+    return user
 
+
+def get_current_user_api(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> User:
+    """Return the authenticated :class:`User` or raise ``401`` (AUTH-06).
+
+    For API routes: an unauthenticated request gets a ``401 Unauthorized`` status
+    rather than an HTML redirect, so programmatic clients can react to it.
+    """
+    user = _resolve_user(request, db)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
     return user
