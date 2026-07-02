@@ -118,7 +118,7 @@
 - **Verify**: embedding dimension == 384
 - **Commit**: `feat: add local embedding model`
 
-### T14: Indexer write-through
+### T14: Indexer write-through ✅ done (`8b1c324`)
 - **Requirement**: VEC-01, VEC-04
 - **Action**: index/delete transaction embeddings with user_id
 - **Verify**: `tests/unit/test_indexer.py`

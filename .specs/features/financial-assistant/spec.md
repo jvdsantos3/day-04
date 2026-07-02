@@ -681,10 +681,10 @@ Fixture de teste para cenário 3: receita R$ 5.000 + despesas desbalanceadas (Cu
 | VAL-02         | P1: Validação          | Design | Pending |
 | VAL-03         | P1: Validação          | Design | Pending |
 | INS-01         | P2: Insights           | -      | Pending |
-| VEC-01         | P1: ChromaDB           | T12    | Partial |
+| VEC-01         | P1: ChromaDB           | T12, T14 | Partial |
 | VEC-02         | P1: ChromaDB           | Design | Pending |
 | VEC-03         | P1: ChromaDB           | Design | Pending |
-| VEC-04         | P1: ChromaDB           | Design | Pending |
+| VEC-04         | P1: ChromaDB           | T14    | Partial |
 | VEC-05         | P1: ChromaDB           | Design | Pending |
 | MCP-01         | P1: MCPs               | Design | Pending |
 | MCP-02         | P1: MCPs               | Design | Pending |
