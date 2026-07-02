@@ -46,7 +46,7 @@
 - **Verify**: Migration applies; tables exist
 - **Commit**: `feat: add database models and migrations`
 
-### T4: Budget category enum + defaults seed
+### T4: Budget category enum + defaults seed ✅ done
 - **Requirement**: BUD-01, CONV-01
 - **Action**: `BudgetCategory` enum + função `seed_budget_targets(user_id)` — defaults somam 90% (margem intencional)
 - **Verify**: `tests/unit/test_budget_defaults.py` — 5 categories with correct ranges; sum of target_pct == 90
