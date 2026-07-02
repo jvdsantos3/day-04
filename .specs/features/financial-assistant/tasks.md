@@ -68,7 +68,7 @@
 - **Verify**: `tests/integration/test_auth.py::test_register_success`
 - **Commit**: `feat: add user registration`
 
-### T7: Login/logout + JWT cookie
+### T7: Login/logout + JWT cookie ✅ done (`2cc27e9`)
 - **Requirement**: AUTH-03, AUTH-04, AUTH-05
 - **Action**: `POST /login`, `POST /logout`, httpOnly cookie, redirect dashboard
 - **Verify**: `test_login_success`, `test_login_invalid`, `test_protected_route_redirect`
