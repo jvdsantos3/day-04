@@ -100,7 +100,12 @@ def specialist_for_intent(intent: Intent, confidence: float = 1.0) -> str:
 
 
 def orchestrator_node(state: AgentState) -> dict:
-    """LangGraph node: classify the latest user message's intent (ORCH-01)."""
+    """LangGraph node: classify the latest user message's intent (ORCH-01).
+
+    ``intent_confidence`` rides along in state so the graph's routing edge
+    can apply the ambiguity override (ORCH-02) — see ``agents/graph.py``'s
+    ``_route_to_specialist``.
+    """
     last_message = state["messages"][-1]
     classification = classify_intent(last_message.content)
-    return {"intent": classification.intent.value}
+    return {"intent": classification.intent.value, "intent_confidence": classification.confidence}

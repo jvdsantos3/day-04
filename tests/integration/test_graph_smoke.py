@@ -9,6 +9,11 @@ Covers:
 - validator -> orchestrator retry, bounded to
   ``validator.MAX_VALIDATION_ATTEMPTS`` (2), falling back instead of looping
   forever when the specialist keeps producing an inconsistent reply;
+- low-confidence classification -> Atendimento regardless of the classified
+  intent (ORCH-02) — found unreachable at the graph level by the feature
+  Verifier (the pure routing function was correct and tested, but nothing
+  threaded confidence into ``AgentState``); this test proves the fix reaches
+  all the way through ``graph.run()``, not just the unit-level function;
 - ``chat_messages`` persistence for both sides of the turn (spec.md "Camada
   2 — SQLite — histórico durável").
 """
@@ -16,6 +21,7 @@ Covers:
 from __future__ import annotations
 
 import pytest
+from langchain_core.messages import AIMessage
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -23,7 +29,7 @@ from sqlalchemy.pool import StaticPool
 from financial_assistant.agents import graph as graph_module
 from financial_assistant.agents import orchestrator
 from financial_assistant.agents import validator as validator_module
-from financial_assistant.agents.specialists import orcamento
+from financial_assistant.agents.specialists import atendimento, orcamento
 from financial_assistant.contracts.agent_response import Intent, IntentClassification
 from financial_assistant.db.session import Base
 from financial_assistant.domain.models import ChatMessage, User
@@ -126,3 +132,35 @@ def test_graph_retries_then_falls_back_after_max_attempts(db_session, budget_adv
         messages = db.query(ChatMessage).filter_by(session_id="sess-2").all()
     assert len(messages) == 2  # one turn persisted: user message + final (fallback) reply
     assert {m.role for m in messages} == {"user", "assistant"}
+
+
+def test_graph_routes_low_confidence_intent_to_atendimento(db_session, monkeypatch):
+    """ORCH-02: a below-threshold classification routes to Atendimento even
+    though the classified intent was budget_advice — proves the ambiguity
+    override reaches the real graph edge, not just specialist_for_intent()."""
+    testing_session, user_id = db_session
+    ambiguous_confidence = orchestrator.AMBIGUITY_CONFIDENCE_THRESHOLD - 0.1
+    monkeypatch.setattr(
+        orchestrator,
+        "classify_intent",
+        lambda message: IntentClassification(intent=Intent.BUDGET_ADVICE, confidence=ambiguous_confidence),
+    )
+
+    def _budget_summary_should_not_run(**kwargs):
+        raise AssertionError("Orçamento specialist should not run for an ambiguous intent")
+
+    monkeypatch.setattr(orcamento, "_get_budget_summary", _budget_summary_should_not_run)
+    monkeypatch.setattr(atendimento, "get_atendimento_llm", lambda: _EchoChatModel())
+    monkeypatch.setattr(
+        "financial_assistant.vector.knowledge_seed.query_knowledge",
+        lambda query, n_results=3: [{"doc_id": "kb-overview", "document": "resumo das 5 categorias", "metadata": {}}],
+    )
+
+    response = graph_module.run(user_id, "sess-3", "Em quais categorias devo economizar?")
+
+    assert "resumo das 5 categorias" in response.text  # echoed from Atendimento's grounded context
+
+
+class _EchoChatModel:
+    def invoke(self, messages):
+        return AIMessage(content=messages[-1].content)

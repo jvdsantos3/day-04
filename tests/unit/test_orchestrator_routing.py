@@ -120,4 +120,4 @@ def test_orchestrator_node_sets_intent_on_state(monkeypatch):
 
     result = orchestrator_node(state)
 
-    assert result == {"intent": "budget_advice"}
+    assert result == {"intent": "budget_advice", "intent_confidence": 0.8}

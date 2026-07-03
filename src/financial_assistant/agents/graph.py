@@ -6,12 +6,12 @@ flow (``orchestrator -> {atendimento, transacoes, orcamento} -> validator ->
 
 Routing:
 - ``orchestrator`` -> specialist: picked by ``orchestrator.specialist_for_intent``
-  from ``state["intent"]`` (set by ``orchestrator_node``, T20). Scoped to
-  ORCH-01 only — the confidence-based ambiguity override (ORCH-02) isn't
-  wired at this edge because ``orchestrator_node``'s contract (its returned
-  dict, asserted by ``test_orchestrator_node_sets_intent_on_state``) doesn't
-  carry the classification's confidence into ``AgentState``; closing that
-  gap is a separate task.
+  from ``state["intent"]``/``state["intent_confidence"]`` (both set by
+  ``orchestrator_node``, T20/fix). Below ``AMBIGUITY_CONFIDENCE_THRESHOLD``,
+  the edge routes to Atendimento regardless of the classified intent
+  (ORCH-02) — found unreachable at the system level by the feature
+  Verifier despite ``specialist_for_intent`` itself being correctly unit
+  tested; fixed by threading confidence through ``AgentState``.
 - ``validator`` -> ``orchestrator`` | ``END``: ``validator_node`` (T24)
   already signals a rejection that hasn't exhausted
   ``MAX_VALIDATION_ATTEMPTS`` by returning ``final_response=None`` — that's
@@ -52,8 +52,9 @@ _SPECIALIST_NODES = ("atendimento", "transacoes", "orcamento")
 
 
 def _route_to_specialist(state: AgentState) -> str:
-    """Pick the specialist node for this turn's classified intent (ORCH-01)."""
-    return specialist_for_intent(Intent(state["intent"]))
+    """Pick the specialist node for this turn's classified intent (ORCH-01/02)."""
+    confidence = state.get("intent_confidence")
+    return specialist_for_intent(Intent(state["intent"]), confidence if confidence is not None else 1.0)
 
 
 def _route_after_validation(state: AgentState) -> str:
@@ -111,6 +112,7 @@ def run(
         "user_id": user_id,
         "session_id": session_id,
         "intent": None,
+        "intent_confidence": None,
         "retrieved_context": [],
         "pending_action": None,
         "agent_notes": [],
