@@ -33,6 +33,7 @@ from decimal import Decimal
 
 import pytest
 from fastapi import HTTPException
+from langchain_core.tools import StructuredTool
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -527,6 +528,14 @@ class _FailingMCPClient:
         raise RuntimeError("mcp server failed to start")
 
 
+class _SuccessfulMCPClient:
+    def __init__(self, tools):
+        self._tools = tools
+
+    async def get_tools(self):
+        return self._tools
+
+
 _EXPECTED_FALLBACK_TOOL_NAMES = {
     "create_transaction",
     "list_transactions",
@@ -542,6 +551,14 @@ _EXPECTED_FALLBACK_TOOL_NAMES = {
 }
 
 
+def _fake_tool(name: str):
+    def fake_tool():
+        """Fake MCP tool used by client adapter tests."""
+        return {"ok": True}
+
+    return StructuredTool.from_function(fake_tool, name=name, description=f"{name} fake tool")
+
+
 async def test_mcp_fallback_on_failure(caplog):
     """MCP-03: when the MCP client fails to initialize, the system logs a warning and starts with in-process tools."""
     with caplog.at_level(logging.WARNING):
@@ -551,3 +568,47 @@ async def test_mcp_fallback_on_failure(caplog):
     assert any(
         "falling back to in-process tools" in record.message for record in caplog.records
     )
+
+
+async def test_mcp_tool_bundle_keeps_fallback_tools_on_success():
+    primary_tools = [_fake_tool(name) for name in _EXPECTED_FALLBACK_TOOL_NAMES]
+
+    bundle = await mcp_client.get_mcp_tool_bundle(client=_SuccessfulMCPClient(primary_tools))
+
+    assert set(bundle.primary) == _EXPECTED_FALLBACK_TOOL_NAMES
+    assert set(bundle.fallback) == _EXPECTED_FALLBACK_TOOL_NAMES
+    assert bundle.primary["create_transaction"].name == "create_transaction"
+    assert bundle.fallback["create_transaction"].name == "create_transaction"
+    assert bundle.source == "mcp"
+
+
+async def test_mcp_tool_bundle_falls_back_to_in_process_tools_on_failure(caplog):
+    with caplog.at_level(logging.WARNING):
+        bundle = await mcp_client.get_mcp_tool_bundle(client=_FailingMCPClient())
+
+    assert set(bundle.primary) == _EXPECTED_FALLBACK_TOOL_NAMES
+    assert set(bundle.fallback) == _EXPECTED_FALLBACK_TOOL_NAMES
+    assert bundle.source == "fallback"
+    assert bundle.primary["query_knowledge"] is bundle.fallback["query_knowledge"]
+    assert any(
+        "falling back to in-process tools" in record.message for record in caplog.records
+    )
+
+
+async def test_mcp_tool_bundle_uses_fallback_when_required_primary_tool_is_missing(caplog):
+    missing_one = _EXPECTED_FALLBACK_TOOL_NAMES - {"query_knowledge"}
+    primary_tools = [_fake_tool(name) for name in missing_one]
+
+    with caplog.at_level(logging.WARNING):
+        bundle = await mcp_client.get_mcp_tool_bundle(client=_SuccessfulMCPClient(primary_tools))
+
+    assert set(bundle.primary) == _EXPECTED_FALLBACK_TOOL_NAMES
+    assert bundle.source == "fallback"
+    assert any("missing required MCP tools" in record.message for record in caplog.records)
+
+
+def test_tool_map_rejects_duplicate_tool_names():
+    duplicate_tools = [_fake_tool("query_knowledge"), _fake_tool("query_knowledge")]
+
+    with pytest.raises(ValueError, match="Duplicate MCP tool name"):
+        mcp_client.tool_map(duplicate_tools)

@@ -176,11 +176,11 @@ T12 ──→ T13 ──→ T14
 
 **Done when**:
 
-- [ ] `ToolBundle` or equivalent exposes `primary`, `fallback`, and `source`.
-- [ ] Successful MCP loading keeps in-process fallback tools available.
-- [ ] MCP load failure returns fallback as primary and fallback with `source="fallback"`.
-- [ ] Missing/duplicate tool names are handled deterministically.
-- [ ] Targeted integration gate for `tests/integration/test_mcp.py` passes.
+- [x] `ToolBundle` or equivalent exposes `primary`, `fallback`, and `source`.
+- [x] Successful MCP loading keeps in-process fallback tools available.
+- [x] MCP load failure returns fallback as primary and fallback with `source="fallback"`.
+- [x] Missing/duplicate tool names are handled deterministically.
+- [x] Targeted integration gate for `tests/integration/test_mcp.py` passes.
 
 **Tests**: integration  
 **Gate**: targeted integration

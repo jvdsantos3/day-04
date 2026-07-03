@@ -17,6 +17,8 @@ direct in-memory call.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
+from typing import Literal
 
 from langchain_core.tools import BaseTool, StructuredTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -49,6 +51,19 @@ _CHROMA_TOOL_FUNCS = (
     chroma_mcp.save_working_memory,
 )
 
+_REQUIRED_TOOL_NAMES = frozenset(
+    func.__name__ for func in (*_FINANCE_TOOL_FUNCS, *_CHROMA_TOOL_FUNCS)
+)
+
+
+@dataclass(frozen=True)
+class ToolBundle:
+    """Primary MCP tools plus in-process fallback tools keyed by tool name."""
+
+    primary: dict[str, BaseTool]
+    fallback: dict[str, BaseTool]
+    source: Literal["mcp", "fallback"]
+
 
 def in_process_tools() -> list[BaseTool]:
     """Build the fallback tool set: finance-mcp + chroma-mcp functions called directly, in-process."""
@@ -57,19 +72,45 @@ def in_process_tools() -> list[BaseTool]:
     ]
 
 
-async def get_mcp_tools(client: MultiServerMCPClient | None = None) -> list[BaseTool]:
-    """Load finance-mcp/chroma-mcp tools; fall back to in-process tools if the MCP client fails.
+def tool_map(tools: list[BaseTool]) -> dict[str, BaseTool]:
+    """Return tools keyed by name, rejecting duplicates deterministically."""
+    mapped: dict[str, BaseTool] = {}
+    for tool in tools:
+        if tool.name in mapped:
+            raise ValueError(f"Duplicate MCP tool name: {tool.name}")
+        mapped[tool.name] = tool
+    return mapped
+
+
+def _require_all_tools(mapped: dict[str, BaseTool]) -> None:
+    missing = sorted(_REQUIRED_TOOL_NAMES - set(mapped))
+    if missing:
+        raise ValueError(f"missing required MCP tools: {', '.join(missing)}")
+
+
+async def get_mcp_tool_bundle(client: MultiServerMCPClient | None = None) -> ToolBundle:
+    """Load primary MCP tools while preserving in-process fallback tools.
 
     MCP-03: WHEN um servidor MCP falhar na inicialização, o sistema SHALL logar
     erro e iniciar com tools in-process equivalentes.
     """
+    fallback = tool_map(in_process_tools())
     client = client if client is not None else MultiServerMCPClient(MCP_CONNECTIONS)
     try:
-        return await client.get_tools()
-    except Exception:
+        primary = tool_map(await client.get_tools())
+        _require_all_tools(primary)
+        return ToolBundle(primary=primary, fallback=fallback, source="mcp")
+    except Exception as exc:
         logger.warning(
-            "MCP client failed to initialize finance-mcp/chroma-mcp; "
+            "MCP client failed to initialize finance-mcp/chroma-mcp (%s); "
             "falling back to in-process tools",
+            exc,
             exc_info=True,
         )
-        return in_process_tools()
+        return ToolBundle(primary=fallback, fallback=fallback, source="fallback")
+
+
+async def get_mcp_tools(client: MultiServerMCPClient | None = None) -> list[BaseTool]:
+    """Load finance-mcp/chroma-mcp tools; fall back to in-process tools if the MCP client fails."""
+    bundle = await get_mcp_tool_bundle(client=client)
+    return list(bundle.primary.values())
