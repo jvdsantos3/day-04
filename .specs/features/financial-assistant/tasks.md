@@ -168,7 +168,7 @@
 - **Verify**: `tests/unit/test_orchestrator_routing.py` — mock LLM returns intents
 - **Commit**: `feat: add orchestrator intent routing`
 
-### T21: Specialist — Atendimento
+### T21: Specialist — Atendimento ✅ done
 - **Requirement**: CONV-01
 - **Action**: System prompt + query_knowledge tool; explains 5 categories
 - **Verify**: mock test — response contains all category names
