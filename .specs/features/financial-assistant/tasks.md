@@ -192,7 +192,7 @@
 - **Verify**: `tests/unit/test_validator.py` — rejects wrong balance
 - **Commit**: `feat: add response validator`
 
-### T25: Wire full graph
+### T25: Wire full graph ✅ done
 - **Requirement**: ORCH-01
 - **Action**: Connect all specialists; max 2 validation retries
 - **Verify**: `tests/integration/test_graph_smoke.py`

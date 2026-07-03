@@ -675,8 +675,8 @@ Fixture de teste para cenário 3: receita R$ 5.000 + despesas desbalanceadas (Cu
 | BUD-01         | P1: Orçamento          | T4, T10 | Partial |
 | BUD-02         | P1: Orçamento          | T10    | Partial |
 | BUD-03         | P1: Orçamento          | T10    | Partial |
-| ORCH-01        | P1: Orquestração       | Design | Pending |
-| ORCH-02        | P1: Orquestração       | Design | Pending |
+| ORCH-01        | P1: Orquestração       | T19, T20, T25 | Done |
+| ORCH-02        | P1: Orquestração       | T20    | Partial |
 | VAL-01         | P1: Validação          | T11, T24 | Done  |
 | VAL-02         | P1: Validação          | T11, T24 | Done  |
 | VAL-03         | P1: Validação          | T24    | Done    |
