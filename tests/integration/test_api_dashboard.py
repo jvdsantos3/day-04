@@ -157,6 +157,29 @@ def test_summary_warning_when_no_income(client):
     assert isinstance(body["warning"], str) and body["warning"]
 
 
+def test_summary_invalid_month_format_returns_400(client):
+    test_client, _ = client
+    _register(test_client)
+
+    resp = test_client.get("/api/dashboard/summary", params={"month": "not-a-month"})
+
+    # API-DASH-01 edge case: malformed month -> 400, not 500.
+    assert resp.status_code == 400
+    assert resp.json() == {"detail": "Mês inválido"}
+
+
+def test_summary_month_out_of_range_returns_400(client):
+    test_client, _ = client
+    _register(test_client)
+
+    # Month 13 doesn't exist; datetime.strptime("%Y-%m") already rejects it,
+    # so no separate bounds check is needed beyond the parse in _validate_month.
+    resp = test_client.get("/api/dashboard/summary", params={"month": "2026-13"})
+
+    assert resp.status_code == 400
+    assert resp.json() == {"detail": "Mês inválido"}
+
+
 def test_summary_defaults_to_current_month(client):
     test_client, TestingSession = client
     _register(test_client)
@@ -253,6 +276,17 @@ def test_transactions_invalid_category_returns_400(client):
     # API-DASH-02: invalid slug -> 400 with the exact spec message.
     assert resp.status_code == 400
     assert resp.json() == {"detail": "Categoria inválida"}
+
+
+def test_transactions_invalid_month_format_returns_400(client):
+    test_client, _ = client
+    _register(test_client)
+
+    resp = test_client.get("/api/transactions", params={"month": "not-a-month"})
+
+    # API-DASH-02 edge case: malformed month -> 400, not 500.
+    assert resp.status_code == 400
+    assert resp.json() == {"detail": "Mês inválido"}
 
 
 def test_transactions_empty_when_nothing_matches(client):

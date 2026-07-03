@@ -12,7 +12,7 @@ consumer) were moved here.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -61,14 +61,35 @@ def _current_month() -> str:
     return date.today().strftime("%Y-%m")
 
 
+def _validate_month(month: str | None) -> str | None:
+    """Validate an optional ``YYYY-MM`` query param, else 400 (API-DASH-01/02 edge case).
+
+    ``None``/empty string means "no filter" and is passed through unchanged
+    (matches the existing "explicit empty month = all-time" behaviour).
+    ``datetime.strptime`` with ``%Y-%m`` already rejects out-of-range months
+    (e.g. "2026-13") and non-numeric/malformed strings, so no extra bounds
+    check is needed beyond the parse itself.
+    """
+    if not month:
+        return month
+    try:
+        datetime.strptime(month, "%Y-%m")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Mês inválido") from None
+    return month
+
+
 @router.get("/dashboard/summary", response_model=DashboardSummaryOut)
 def dashboard_summary(
     month: str | None = None,
     user: User = Depends(get_current_user_api),
     db: Session = Depends(get_db),
 ) -> DashboardSummaryOut:
-    """Budget summary for ``month`` (default: current month) (API-DASH-01)."""
-    resolved_month = month or _current_month()
+    """Budget summary for ``month`` (default: current month) (API-DASH-01).
+
+    An invalid ``month`` format -> 400 "Mês inválido" (``_validate_month``).
+    """
+    resolved_month = _validate_month(month) or _current_month()
     summary = BudgetService(db).get_summary(user.id, resolved_month)
     total_expense = sum((c.spent for c in summary.categories), _ZERO)
 
@@ -104,10 +125,12 @@ def transactions(
     """List the user's transactions, optionally filtered (API-DASH-02).
 
     An invalid ``category`` slug -> 400 "Categoria inválida" (``_parse_category``).
+    An invalid ``month`` format -> 400 "Mês inválido" (``_validate_month``).
     """
     category_filter = _parse_category(category)
+    validated_month = _validate_month(month)
     rows = TransactionRepository(db).list(
-        user.id, month=month or None, category=category_filter
+        user.id, month=validated_month or None, category=category_filter
     )
     return TransactionListOut(
         transactions=[
