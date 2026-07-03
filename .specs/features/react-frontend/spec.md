@@ -184,9 +184,9 @@ O assistente financeiro entrega todas as telas via Jinja2 + HTMX servidas pelo F
 | UI-DASH-01 | P1: Dashboard | Design | Done (T12) |
 | UI-DASH-02 | P1: Dashboard | Design | Done (T13) |
 | UI-DASH-03 | P1: Dashboard | Design | Done (T13) |
-| UI-CHAT-01 | P1: Chat | Design | Done (T15/pending-hash) |
-| UI-CHAT-02 | P1: Chat | Design | Done (T15/pending-hash) |
-| UI-CHAT-03 | P1: Chat | Design | Done (T15/pending-hash) |
+| UI-CHAT-01 | P1: Chat | Design | Done (T15/2964185) |
+| UI-CHAT-02 | P1: Chat | Design | Done (T15/2964185) |
+| UI-CHAT-03 | P1: Chat | Design | Done (T15/2964185) |
 | UI-SHELL-01 | P1: Shell | Design | Done (T8; guard/header dinâmico completados em 2271cff) |
 | UI-SHELL-02 | P1: Shell | Design | Done (T8; guard/header dinâmico completados em 2271cff) |
 | DEPLOY-01 | P1: Shell | Design | Pending |
