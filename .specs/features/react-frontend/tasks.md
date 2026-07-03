@@ -123,7 +123,7 @@
 
 ## Phase 2: Frontend Scaffold
 
-### T6 — Vite + React + TypeScript project
+### T6 — Vite + React + TypeScript project — DONE (9ade410)
 
 **Scope:** `frontend/` directory
 
