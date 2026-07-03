@@ -2,9 +2,12 @@
 
 Read-only, user-scoped views for the React dashboard. Reuses the domain
 ``BudgetService`` and ``TransactionRepository`` (so scoping and month bounds
-are not re-implemented) and the ``CATEGORY_LABELS`` mapping from the web
-router (so the PT-BR labels cannot drift). Money and dates are serialised as
-strings/ISO (see ``schemas``) to keep the client free of float rounding.
+are not re-implemented). Money and dates are serialised as strings/ISO (see
+``schemas``) to keep the client free of float rounding.
+
+Since T18 this is the sole dashboard surface — the old Jinja2 ``web/router.py``
+was removed, and ``CATEGORY_LABELS``/``_parse_category`` (its only remaining
+consumer) were moved here.
 """
 
 from __future__ import annotations
@@ -12,7 +15,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from financial_assistant.api.schemas import (
@@ -23,16 +26,35 @@ from financial_assistant.api.schemas import (
 )
 from financial_assistant.auth.dependencies import get_current_user_api
 from financial_assistant.db.session import get_db
-from financial_assistant.domain.models import User
+from financial_assistant.domain.models import BudgetCategory, User
 from financial_assistant.domain.repositories.transaction_repository import (
     TransactionRepository,
 )
 from financial_assistant.domain.services.budget_service import BudgetService
-from financial_assistant.web.router import CATEGORY_LABELS, _parse_category
 
 router = APIRouter()
 
 _ZERO = Decimal("0")
+
+# Display labels for the spec's five categories (BudgetCategory stores the
+# SQL/agent-facing slug, e.g. "custos_fixos" — the dashboard shows the
+# human-readable name instead).
+CATEGORY_LABELS: dict[BudgetCategory, str] = {
+    BudgetCategory.FIXED: "Custos Fixos",
+    BudgetCategory.COMFORT: "Conforto",
+    BudgetCategory.INVESTMENTS: "Investimentos",
+    BudgetCategory.KNOWLEDGE: "Conhecimento e Metas",
+    BudgetCategory.PLEASURES: "Prazeres",
+}
+
+
+def _parse_category(category: str | None) -> BudgetCategory | None:
+    if not category:
+        return None
+    try:
+        return BudgetCategory(category)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Categoria inválida") from None
 
 
 def _current_month() -> str:

@@ -263,3 +263,75 @@ def test_transactions_empty_when_nothing_matches(client):
 
     assert resp.status_code == 200
     assert resp.json() == {"transactions": []}
+
+
+def _seed_varied_transactions(TestingSession, user_id):
+    """Two categories, two months — enough to prove filters actually filter.
+
+    Migrated from test_dashboard.py::_seed_user_with_varied_transactions (T18):
+    the underlying TransactionRepository.list() filtering behaviour (TBL-03)
+    was only exercised through the old HTML partial route; these cases have
+    no equivalent yet against the JSON /api/transactions route.
+    """
+    _add(
+        TestingSession, user_id,
+        date=date(2026, 7, 5), description="aluguel de julho",
+        type=TransactionType.EXPENSE, amount=Decimal("2000.00"),
+        category=BudgetCategory.FIXED,
+    )
+    _add(
+        TestingSession, user_id,
+        date=date(2026, 7, 10), description="cinema",
+        type=TransactionType.EXPENSE, amount=Decimal("50.00"),
+        category=BudgetCategory.PLEASURES,
+    )
+    _add(
+        TestingSession, user_id,
+        date=date(2026, 6, 5), description="aluguel de junho",
+        type=TransactionType.EXPENSE, amount=Decimal("1900.00"),
+        category=BudgetCategory.FIXED,
+    )
+
+
+def test_transactions_filtered_by_month(client):
+    """TBL-03 (migrated): filtering by month returns only that month's rows, across categories."""
+    test_client, TestingSession = client
+    _register(test_client)
+    user = _user(TestingSession)
+    _seed_varied_transactions(TestingSession, user.id)
+
+    resp = test_client.get("/api/transactions", params={"month": "2026-06"})
+
+    assert resp.status_code == 200
+    descriptions = [r["description"] for r in resp.json()["transactions"]]
+    assert descriptions == ["aluguel de junho"]
+
+
+def test_transactions_month_and_category_filters_combine(client):
+    """TBL-03 (migrated): month and category filters combine (AND), not just either alone."""
+    test_client, TestingSession = client
+    _register(test_client)
+    user = _user(TestingSession)
+    _seed_varied_transactions(TestingSession, user.id)
+
+    resp = test_client.get(
+        "/api/transactions", params={"month": "2026-07", "category": "custos_fixos"}
+    )
+
+    assert resp.status_code == 200
+    descriptions = [r["description"] for r in resp.json()["transactions"]]
+    assert descriptions == ["aluguel de julho"]
+
+
+def test_transactions_explicit_empty_month_means_all_time(client):
+    """(migrated) An explicit empty ``month`` query param clears the filter (all-time), not zero rows."""
+    test_client, TestingSession = client
+    _register(test_client)
+    user = _user(TestingSession)
+    _seed_varied_transactions(TestingSession, user.id)
+
+    resp = test_client.get("/api/transactions", params={"month": ""})
+
+    assert resp.status_code == 200
+    descriptions = {r["description"] for r in resp.json()["transactions"]}
+    assert descriptions == {"aluguel de julho", "aluguel de junho", "cinema"}

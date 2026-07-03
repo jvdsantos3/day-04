@@ -1,9 +1,13 @@
-"""Chat router — ``/chat`` page and its SSE endpoint (T29, WEB-05, CHAT-01).
+"""Chat router — the ``/api/chat`` SSE endpoint (T29, CHAT-01).
 
 ``POST /api/chat`` is the design.md-specified interface (``{message,
 session_id}`` -> SSE stream): it runs ``agents.graph.run()`` (T25, which
 already persists the turn to ``chat_messages``) and streams the resulting
 ``AgentResponse`` back as one Server-Sent Event.
+
+Since T18 this endpoint is the sole surface here — the old ``GET /chat``
+Jinja2 HTML page was removed; the React SPA (``pages/Chat.tsx``) now owns
+that surface.
 
 Spec-precision gap: design.md's "Reuses" note calls for LangGraph
 ``astream_events`` for incremental tokens. Every specialist (T21-23) calls
@@ -18,21 +22,16 @@ per-token events is a future task once the specialists stream.
 from __future__ import annotations
 
 from collections.abc import Iterator
-from pathlib import Path
 
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from financial_assistant.agents import graph as agent_graph
-from financial_assistant.auth.dependencies import get_current_user, get_current_user_api
+from financial_assistant.auth.dependencies import get_current_user_api
 from financial_assistant.domain.models import User
 
 router = APIRouter()
-
-_TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "web" / "templates"
-templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 
 class ChatRequest(BaseModel):
@@ -52,12 +51,6 @@ def _stream_turn(user_id: str, session_id: str, message: str) -> Iterator[str]:
     response = agent_graph.run(user_id, session_id, message)
     yield _sse_event(response.model_dump_json())
     yield _sse_event("end", event="done")
-
-
-@router.get("/chat", response_class=HTMLResponse)
-def chat_page(request: Request, user: User = Depends(get_current_user)) -> HTMLResponse:
-    """Render the chat UI (WEB-05)."""
-    return templates.TemplateResponse(request, "chat.html", {"user": user})
 
 
 @router.post("/api/chat")

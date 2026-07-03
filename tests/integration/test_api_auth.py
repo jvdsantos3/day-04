@@ -142,6 +142,11 @@ def test_login_success(client):
     assert body["user"]["name"] == VALID["name"]
     token = test_client.cookies.get("access_token")
     assert token and VALID["password"] not in token
+    # Cookie is httpOnly + SameSite=Lax (migrated from test_auth.py::test_login_success, T18).
+    set_cookie = resp.headers["set-cookie"].lower()
+    assert "access_token=" in set_cookie
+    assert "httponly" in set_cookie
+    assert "samesite=lax" in set_cookie
 
 
 def test_login_wrong_password_generic_401(client):

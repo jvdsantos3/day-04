@@ -1,10 +1,15 @@
-"""Integration tests for the chat page and its SSE endpoint (T29, WEB-05, CHAT-01).
+"""Integration tests for the chat SSE endpoint (T29, CHAT-01).
 
 ``agents.graph.run`` is monkeypatched — no real LLM/DB graph execution here,
 that's already covered by ``tests/integration/test_graph_smoke.py`` (T25).
-This file only proves the HTTP surface: auth guarding (web 302 vs. API 401,
-AUTH-05/AUTH-06) and that a successful turn comes back as a well-formed SSE
+This file proves the HTTP surface of ``POST /api/chat``: auth guarding
+(401, AUTH-06) and that a successful turn comes back as a well-formed SSE
 event carrying the ``AgentResponse``.
+
+The old ``GET /chat`` Jinja2 HTML page and its two tests
+(``test_chat_page_requires_auth``, ``test_chat_page_renders_for_authenticated_user``)
+were removed in T18 along with the route itself — the React SPA now owns
+that surface (Vitest coverage lives in ``frontend/src``).
 """
 
 from __future__ import annotations
@@ -59,26 +64,6 @@ def client(monkeypatch):
 
 def _login_as(test_client: TestClient, user_id: str) -> None:
     test_client.cookies.set(SESSION_COOKIE_NAME, create_access_token(user_id))
-
-
-def test_chat_page_requires_auth(client):
-    test_client, _ = client
-
-    response = test_client.get("/chat", follow_redirects=False)
-
-    assert response.status_code == 302
-    assert response.headers["location"].startswith("/login")
-
-
-def test_chat_page_renders_for_authenticated_user(client):
-    test_client, user_id = client
-    _login_as(test_client, user_id)
-
-    response = test_client.get("/chat")
-
-    assert response.status_code == 200
-    assert 'id="chat-form"' in response.text
-    assert "/api/chat" in response.text
 
 
 def test_chat_endpoint_requires_auth(client):

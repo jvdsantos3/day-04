@@ -1,7 +1,6 @@
 """FastAPI application factory.
 
-Wires the routers into an app instance. Kept minimal — routers are added as
-their tasks land (auth first, then web/chat). Tests build their own app via
+Wires the routers into an app instance. Tests build their own app via
 ``create_app()`` and override the DB dependency for isolation.
 
 The React SPA (``frontend/dist``, built by ``npm run build``) is served by an
@@ -12,23 +11,23 @@ extra probe route on the built app), because Starlette matches routes in
 registration order. The middleware runs the request through the normal
 router first via ``call_next`` and only falls back to the SPA shell when
 nothing else handled it (404) — so it is last by construction, regardless of
-what other routes get added later, and explicit routers (including the old
-Jinja2 HTML routes still present during this transition task) always win.
+what other routes get added later.
+
+Since T18, the old Jinja2 HTML routers (``auth.router``, ``web.router``) and
+their explicit ``/`` -> ``/login`` redirect are gone: the React Router's own
+``RootRedirect`` (client-side, T11) now owns ``/``'s auth-aware redirect, so
+the server just serves the SPA shell for it like any other client route.
 """
 
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from financial_assistant.api.router import router as api_router
-from financial_assistant.auth.router import router as auth_router
 from financial_assistant.chat.router import router as chat_router
-from financial_assistant.web.router import router as web_router
-
-_STATIC_DIR = Path(__file__).resolve().parent / "web" / "static"
 
 # The Vite dev server origin the React SPA is served from in development
 # (CORS-01). Cross-origin requests must carry the session cookie, so
@@ -64,13 +63,7 @@ def create_app(frontend_dist_dir: Path | str | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
-    @app.get("/", include_in_schema=False)
-    async def root() -> RedirectResponse:
-        return RedirectResponse(url="/login", status_code=302)
 
-    app.include_router(auth_router)
-    app.include_router(web_router)
     app.include_router(chat_router)
     app.include_router(api_router, prefix="/api")
 
