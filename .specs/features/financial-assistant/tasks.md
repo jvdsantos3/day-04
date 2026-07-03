@@ -174,7 +174,7 @@
 - **Verify**: mock test — response contains all category names
 - **Commit**: `feat: add atendimento specialist`
 
-### T22: Specialist — Transações
+### T22: Specialist — Transações ✅ done (`2644173`)
 - **Requirement**: CHAT-01/02/03, CONV-02
 - **Action**: CRUD tools; categorize without auto-register on question
 - **Verify**: `test_categorize_delivery_is_prazeres`
