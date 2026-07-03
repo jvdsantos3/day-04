@@ -39,4 +39,12 @@ export interface ChatMessage {
   content: string;
   sources?: { collection: string; doc_id: string }[];
   pending?: boolean;
+  isError?: boolean;
+}
+
+export interface AgentResponse {
+  text: string;
+  suggested_category: string | null;
+  action: "none" | "offer_register" | "registered";
+  metadata?: { sources?: { collection: string; doc_id: string }[]; [key: string]: unknown };
 }

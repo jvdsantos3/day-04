@@ -236,7 +236,7 @@
 
 ## Phase 5: Chat UI
 
-### T15 — Chat page with SSE (UI-CHAT-01, UI-CHAT-02, UI-CHAT-03)
+### T15 — Chat page with SSE (UI-CHAT-01, UI-CHAT-02, UI-CHAT-03) — DONE (pending-hash)
 
 **Scope:** `pages/Chat.tsx`, `hooks/useChat.ts`
 
