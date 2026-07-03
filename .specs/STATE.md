@@ -8,6 +8,14 @@
 - **Trade-off**: UX menos rica que React; suficiente para MVP
 - **Scope**: Todas as features web do financial-assistant
 - **Date**: 2026-07-02
+- **Status**: superseded by AD-005
+
+### AD-005
+- **Decision**: Frontend React (Vite + TypeScript + Tailwind) consumindo APIs JSON no mesmo FastAPI; build estático servido pelo backend em produção
+- **Reason**: UX do HTML/Jinja2 insuficiente para demonstração e uso real; paridade funcional com auth cookie httpOnly preservada
+- **Trade-off**: Dois projetos (Python + Node); novos endpoints JSON; remoção das rotas Jinja após migração
+- **Scope**: Camada de apresentação do financial-assistant (login, register, dashboard, chat)
+- **Date**: 2026-07-02
 - **Status**: active
 
 ### AD-002
@@ -35,6 +43,18 @@
 - **Status**: active
 
 ## Handoff
+
+- **Feature**: react-frontend / `.specs/features/react-frontend/`
+- **Phase / Task**: Specify + Design + Tasks COMPLETOS — aguardando confirmação do usuário e início do Execute (T1)
+- **Completed**: spec.md (22 requisitos P1+P2), design.md (arquitetura SPA + JSON API), tasks.md (19 tasks, 7 waves)
+- **In-progress**: none
+- **Next step**: Confirmar spec/design com o usuário → Execute Wave 1 (T1 JSON auth API + T2 GET /api/auth/me)
+- **Blockers**: none
+- **Prior feature (done)**: financial-assistant / `.specs/features/financial-assistant/` — T1–T32 completos; Verifier 1ª rodada com fixes aplicados
+
+---
+
+### financial-assistant (archived handoff)
 
 - **Feature**: financial-assistant / `.specs/features/financial-assistant/`
 - **Phase / Task**: Phase 3 (Domain Services) COMPLETA — T9 (`344a5f1`), T10 (`f7b1878`), T11 (contracts, `49e9925`/fix `1b06036`) done. Phase 4: T12 (`0661b22`), T13 (`8572145`), T14 (indexer, `8b1c324`) e T15 (knowledge seed) done. Phase 5 COMPLETA — T16 (`finance-mcp`, `633c214`) done, T17 (`chroma-mcp`) done, T18 (MCP client adapter + fallback) done. Phase 6 (Agents) COMPLETA — T19 (LangGraph skeleton) done, T20 (orchestrator intent routing, `f1f76c3`) done, T21 (Atendimento specialist, `62b951a`) done, T22 (Transações specialist, `2644173`) done, T23 (Orçamento specialist, `53146fe`) done, T24 (Validator node) done, T25 (wire full graph) done. Phase 7 (Web UI) COMPLETA — T26 (base templates) done, T27 (dashboard page) done, T28 (dashboard HTMX filters) done, T29 (chat page + SSE) done. Phase 8 (Cenários conversacionais) COMPLETA — T30 (`c3fd43c`), T31 (`a4a1904`), T32 (`cbdef73`) done.
