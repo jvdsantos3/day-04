@@ -207,7 +207,7 @@
 
 ## Phase 4: Dashboard UI
 
-### T12 — Dashboard summary cards (UI-DASH-01, UI-FMT-01)
+### T12 — Dashboard summary cards (UI-DASH-01, UI-FMT-01) — DONE (pending-hash)
 
 **Scope:** `pages/Dashboard.tsx`, `components/CategoryCard.tsx`, `components/Money.tsx`
 
