@@ -149,7 +149,7 @@
 
 ---
 
-### T8 — App shell + React Router (UI-SHELL-01, UI-SHELL-02)
+### T8 — App shell + React Router (UI-SHELL-01, UI-SHELL-02) — DONE (c9aea0b)
 
 **Scope:** `App.tsx`, `layouts/AppLayout.tsx`, `lib/api.ts`
 
