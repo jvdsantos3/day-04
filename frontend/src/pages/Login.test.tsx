@@ -66,6 +66,35 @@ describe("Login", () => {
     expect(screen.queryByText("Dashboard Page")).not.toBeInTheDocument();
   });
 
+  it("submit com 401 associa erro ao campo de senha via aria-describedby (UI-A11Y-02)", async () => {
+    const user = userEvent.setup();
+    (fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({ detail: "Email ou senha inválidos" }),
+    });
+
+    renderLogin();
+    await user.type(screen.getByLabelText(/email/i), "ana@example.com");
+    await user.type(screen.getByLabelText(/senha/i), "wrongpass");
+    await user.click(screen.getByRole("button", { name: /entrar/i }));
+
+    const errorElement = await screen.findByRole("alert");
+    expect(errorElement).toHaveTextContent("Email ou senha inválidos");
+    expect(errorElement.id).toBeTruthy();
+
+    const passwordInput = screen.getByLabelText(/senha/i);
+    expect(passwordInput).toHaveAttribute("aria-describedby", errorElement.id);
+    expect(passwordInput).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("botão de submit tem classe de foco visível aplicada (UI-A11Y-01)", () => {
+    renderLogin();
+    const submitButton = screen.getByRole("button", { name: /entrar/i });
+    expect(submitButton).toHaveClass("focus-visible:outline");
+    expect(submitButton).toHaveClass("focus-visible:outline-blue-600");
+  });
+
   it("botão fica desabilitado durante o loading", async () => {
     const user = userEvent.setup();
     let resolveFetch: (value: unknown) => void = () => {};

@@ -47,10 +47,21 @@ export default function Register() {
     }
   }
 
+  const FOCUS_RING =
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600";
+
   return (
     <form onSubmit={handleSubmit}>
       <h2>Registro</h2>
-      {error && <p role="alert">{error}</p>}
+      {/* Erros do registro (senha curta e email duplicado, 400) são
+          genéricos ao form, então associamos ao campo de senha por ser o
+          último preenchido antes do submit (UI-A11Y-02), consistente com
+          Login.tsx. */}
+      {error && (
+        <p role="alert" id="password-error">
+          {error}
+        </p>
+      )}
       <label htmlFor="name">Nome</label>
       <input
         id="name"
@@ -58,6 +69,7 @@ export default function Register() {
         value={name}
         onChange={(event) => setName(event.target.value)}
         required
+        className={FOCUS_RING}
       />
       <label htmlFor="email">Email</label>
       <input
@@ -66,6 +78,7 @@ export default function Register() {
         value={email}
         onChange={(event) => setEmail(event.target.value)}
         required
+        className={FOCUS_RING}
       />
       <label htmlFor="password">Senha</label>
       <input
@@ -74,8 +87,11 @@ export default function Register() {
         value={password}
         onChange={(event) => setPassword(event.target.value)}
         required
+        aria-invalid={error ? "true" : undefined}
+        aria-describedby={error ? "password-error" : undefined}
+        className={FOCUS_RING}
       />
-      <button type="submit" disabled={loading}>
+      <button type="submit" disabled={loading} className={FOCUS_RING}>
         {loading ? "Criando conta..." : "Criar conta"}
       </button>
     </form>

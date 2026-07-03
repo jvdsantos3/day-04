@@ -191,9 +191,9 @@ O assistente financeiro entrega todas as telas via Jinja2 + HTMX servidas pelo F
 | UI-SHELL-02 | P1: Shell | Design | Done (T8; guard/header dinâmico completados em 2271cff) |
 | DEPLOY-01 | P1: Shell | Design | Done (T17/4c7a24b, T18/88bcbd2) |
 | CORS-01 | P1: Dev | Design | Done (T5) |
-| UI-A11Y-01 | P2: A11y | - | Pending |
-| UI-A11Y-02 | P2: A11y | - | Pending |
-| UI-FMT-01 | P2: Format | - | Done (T12) |
+| UI-A11Y-01 | P2: A11y | - | Done (T19) |
+| UI-A11Y-02 | P2: A11y | - | Done (T19) |
+| UI-FMT-01 | P2: Format | - | Done (T12, confirmado T19) |
 
 **Coverage:** 22 total, 0 mapped to tasks, 22 unmapped ⚠️
 

@@ -38,10 +38,20 @@ export default function Login() {
     }
   }
 
+  const FOCUS_RING =
+    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600";
+
   return (
     <form onSubmit={handleSubmit}>
       <h2>Login</h2>
-      {error && <p role="alert">{error}</p>}
+      {/* Erro do login (401) é genérico ao form (não aponta um campo
+          específico), então associamos ao campo de senha por ser o último
+          preenchido antes do submit (UI-A11Y-02). */}
+      {error && (
+        <p role="alert" id="password-error">
+          {error}
+        </p>
+      )}
       <label htmlFor="email">Email</label>
       <input
         id="email"
@@ -49,6 +59,7 @@ export default function Login() {
         value={email}
         onChange={(event) => setEmail(event.target.value)}
         required
+        className={FOCUS_RING}
       />
       <label htmlFor="password">Senha</label>
       <input
@@ -57,8 +68,11 @@ export default function Login() {
         value={password}
         onChange={(event) => setPassword(event.target.value)}
         required
+        aria-invalid={error ? "true" : undefined}
+        aria-describedby={error ? "password-error" : undefined}
+        className={FOCUS_RING}
       />
-      <button type="submit" disabled={loading}>
+      <button type="submit" disabled={loading} className={FOCUS_RING}>
         {loading ? "Entrando..." : "Entrar"}
       </button>
     </form>

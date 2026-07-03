@@ -1,5 +1,8 @@
 // Filtros de mês e categoria da tabela de transações (UI-DASH-02).
 // `<input type="month">` já produz o formato "YYYY-MM" exigido pela API.
+const FOCUS_RING =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600";
+
 const CATEGORIES: { value: string; label: string }[] = [
   { value: "custos_fixos", label: "Custos Fixos" },
   { value: "conforto", label: "Conforto" },
@@ -32,6 +35,7 @@ export default function TransactionFilters({
           type="month"
           value={month}
           onChange={(e) => onMonthChange(e.target.value)}
+          className={FOCUS_RING}
         />
       </div>
       <div>
@@ -42,6 +46,7 @@ export default function TransactionFilters({
           id="filter-category"
           value={category}
           onChange={(e) => onCategoryChange(e.target.value)}
+          className={FOCUS_RING}
         >
           <option value="">Todas</option>
           {CATEGORIES.map((c) => (

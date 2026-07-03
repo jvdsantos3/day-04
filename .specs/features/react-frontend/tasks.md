@@ -2,7 +2,7 @@
 
 **Spec**: `.specs/features/react-frontend/spec.md`
 **Design**: `.specs/features/react-frontend/design.md`
-**Status**: Ready for Execute
+**Status**: Executed — aguardando Verifier
 
 ---
 
@@ -280,7 +280,7 @@
 
 ## Phase 7: Polish (P2)
 
-### T19 — Acessibilidade + formatação BRL (UI-A11Y-01, UI-A11Y-02, UI-FMT-01)
+### T19 — Acessibilidade + formatação BRL (UI-A11Y-01, UI-A11Y-02, UI-FMT-01) — DONE (de4e5c4)
 
 **Scope:** componentes existentes
 
@@ -291,6 +291,8 @@
 **Verify:** Vitest + inspeção manual Tab navigation
 
 **Depends on:** T18
+
+**Resultado:** Focus ring visível (`focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600`) aplicado em todos os inputs de Login/Register/TransactionFilters, botões de submit/logout/retry do chat, e links de navegação do AppLayout. `aria-describedby` + `aria-invalid` adicionados em Login.tsx/Register.tsx associando o erro do form ao campo de senha (última entrada antes do submit). UI-FMT-01 já estava coberto (Money.tsx usado em CategoryCard, Dashboard, TransactionTable) — apenas confirmado, sem correções necessárias.
 
 ---
 

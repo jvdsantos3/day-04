@@ -1,6 +1,9 @@
 import { Outlet, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
+const FOCUS_RING =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600";
+
 export default function AppLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -17,9 +20,13 @@ export default function AppLayout() {
         {user && (
           <nav className="flex flex-wrap items-center gap-4">
             <span>{user.name}</span>
-            <Link to="/dashboard">Dashboard</Link>
-            <Link to="/chat">Chat</Link>
-            <button type="button" onClick={handleLogout}>
+            <Link to="/dashboard" className={FOCUS_RING}>
+              Dashboard
+            </Link>
+            <Link to="/chat" className={FOCUS_RING}>
+              Chat
+            </Link>
+            <button type="button" onClick={handleLogout} className={FOCUS_RING}>
               Sair
             </button>
           </nav>

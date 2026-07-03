@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { useChat } from "@/hooks/useChat";
 
+const FOCUS_RING =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600";
+
 export default function Chat() {
   const { messages, sendMessage, isSending } = useChat();
   const [input, setInput] = useState("");
@@ -33,7 +36,7 @@ export default function Chat() {
                 <button
                   type="button"
                   onClick={() => handleRetry(lastUserContentBefore(messages, index))}
-                  className="mt-2 rounded bg-expense px-3 py-1 text-sm text-white"
+                  className={`mt-2 rounded bg-expense px-3 py-1 text-sm text-white ${FOCUS_RING}`}
                 >
                   Tentar novamente
                 </button>
@@ -78,12 +81,12 @@ export default function Chat() {
           onChange={(event) => setInput(event.target.value)}
           disabled={isSending}
           placeholder="Digite sua mensagem..."
-          className="flex-1 rounded border border-neutral-300 p-2 text-sm"
+          className={`flex-1 rounded border border-neutral-300 p-2 text-sm ${FOCUS_RING}`}
         />
         <button
           type="submit"
           disabled={!canSend}
-          className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+          className={`rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-50 ${FOCUS_RING}`}
         >
           Enviar
         </button>
