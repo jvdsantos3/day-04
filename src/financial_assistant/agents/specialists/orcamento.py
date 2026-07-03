@@ -24,10 +24,19 @@ Spec-precision gap (CONV-03): a spec não define um limiar numérico para
 "menor margem restante" quando a categoria ainda não excedeu a faixa.
 Escolhido: dentro de ``TIGHT_MARGIN_PCT`` pontos percentuais do teto também
 entra na lista de atenção.
+
+BUD-03 AC3 fix: "como está meu orçamento?" pede um resumo **incondicional**
+das 5 categorias (gasto, %, faixa, status) — distinto de CONV-03's lista
+*priorizada* só das categorias que precisam de atenção. Como as duas
+perguntas roteiam para o mesmo intent (`budget_advice`, design.md's tabela
+de roteamento só tem um padrão para "orçamento"), a distinção é feita aqui
+dentro do especialista via ``_wants_full_summary`` (mesmo padrão de
+desambiguação por palavra-chave do especialista Transações, T22).
 """
 
 from __future__ import annotations
 
+import re
 from datetime import date
 from typing import Callable
 
@@ -47,6 +56,15 @@ NO_ATTENTION_TEXT = (
 )
 
 TIGHT_MARGIN_PCT = 5.0
+
+_FULL_SUMMARY_MARKERS = re.compile(r"como (está|anda)|resumo", re.IGNORECASE)
+
+
+def _wants_full_summary(message: str) -> bool:
+    """"Como está meu orçamento?" (BUD-03 AC3) vs. "em quais categorias devo
+    economizar?" (CONV-03) — both route to ``budget_advice``; this decides
+    which of the two answers the message is actually asking for."""
+    return bool(_FULL_SUMMARY_MARKERS.search(message))
 
 
 def _needs_attention(category: dict) -> bool:
@@ -80,20 +98,44 @@ def _format_advice(categories: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _format_faixa(category: dict) -> str:
+    if category["max_pct"] >= 100:
+        return f'≥{category["min_pct"]:.0f}%'
+    return f'{category["min_pct"]:.0f}-{category["max_pct"]:.0f}%'
+
+
+def _format_summary_line(category: dict) -> str:
+    return (
+        f'- {category["category"]}: gasto R$ {category["spent"]} '
+        f'({category["pct"]:.1f}%), faixa {_format_faixa(category)}, status {category["status"]}'
+    )
+
+
+def _format_full_summary(categories: list[dict]) -> str:
+    """Resumo incondicional das 5 categorias — gasto, %, faixa, status (BUD-03 AC3)."""
+    lines = ["Resumo do seu orçamento este mês:"]
+    lines.extend(_format_summary_line(c) for c in categories)
+    return "\n".join(lines)
+
+
 def budget_advice(
     user_id: str,
     month: str | None = None,
     *,
     get_summary: Callable[..., dict] | None = None,
+    message: str = "",
 ) -> AgentResponse:
-    """Especialista Orçamento: alertas priorizados por categoria (BUD-03, CONV-03, CONV-04)."""
+    """Especialista Orçamento: resumo (BUD-03 AC3) ou alertas priorizados (CONV-03, CONV-04)."""
     fetch = get_summary if get_summary is not None else _get_budget_summary
     summary = fetch(user_id=user_id, month=month or date.today().strftime("%Y-%m"))
     if not summary["has_income"]:
         return AgentResponse(text=NO_INCOME_ADVICE)
+    if _wants_full_summary(message):
+        return AgentResponse(text=_format_full_summary(summary["categories"]))
     return AgentResponse(text=_format_advice(summary["categories"]))
 
 
 def orcamento_node(state: AgentState, *, get_summary: Callable[..., dict] | None = None) -> dict:
     """LangGraph node: resposta do especialista Orçamento (BUD-03, CONV-03, CONV-04)."""
-    return {"final_response": budget_advice(state["user_id"], get_summary=get_summary)}
+    message = state["messages"][-1].content
+    return {"final_response": budget_advice(state["user_id"], get_summary=get_summary, message=message)}
