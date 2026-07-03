@@ -8,6 +8,7 @@ their tasks land (auth first, then web/chat). Tests build their own app via
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from financial_assistant.auth.router import router as auth_router
@@ -21,6 +22,10 @@ def create_app() -> FastAPI:
     """Build and return the FastAPI application."""
     app = FastAPI(title="Assistente Financeiro")
     app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
+    @app.get("/", include_in_schema=False)
+    async def root() -> RedirectResponse:
+        return RedirectResponse(url="/login", status_code=302)
+
     app.include_router(auth_router)
     app.include_router(web_router)
     app.include_router(chat_router)
