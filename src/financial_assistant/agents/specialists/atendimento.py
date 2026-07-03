@@ -4,6 +4,12 @@ Grounds every reply in the ``knowledge_base`` ChromaDB collection (T15) via the
 ``query_knowledge`` tool exposed by ``chroma-mcp`` (design.md, VEC-03), so a
 "plano de gastos"-style question is answered from the seeded category docs +
 overview — without requiring any pre-existing transaction (spec P1 AC1).
+
+VEC-03 fix: the retrieved docs' ``doc_id``s are cited in
+``AgentResponse.metadata["sources"]`` (collection + doc, per spec "citar a
+fonte") — structured metadata rather than an LLM-authored footer, since the
+AgentResponse contract already reserves ``metadata`` for exactly this kind
+of side-channel data (e.g. T22's ``metadata={"transaction": ...}``).
 """
 
 from __future__ import annotations
@@ -55,8 +61,16 @@ def get_atendimento_llm() -> BaseChatModel:
     )
 
 
+_KNOWLEDGE_BASE_COLLECTION = "knowledge_base"
+
+
 def _build_context(docs: list[dict[str, object]]) -> str:
     return "\n".join(f"- {doc['document']}" for doc in docs)
+
+
+def _cite_sources(docs: list[dict[str, object]]) -> list[dict[str, str]]:
+    """Cite the collection + doc each hit came from (VEC-03, "citar a fonte")."""
+    return [{"collection": _KNOWLEDGE_BASE_COLLECTION, "doc_id": doc["doc_id"]} for doc in docs]
 
 
 def answer(message: str, llm: BaseChatModel | None = None) -> AgentResponse:
@@ -69,7 +83,7 @@ def answer(message: str, llm: BaseChatModel | None = None) -> AgentResponse:
         HumanMessage(f"CONTEXTO:\n{context}\n\nPERGUNTA: {message}"),
     ]
     response = model.invoke(messages)
-    return AgentResponse(text=response.content)
+    return AgentResponse(text=response.content, metadata={"sources": _cite_sources(docs)})
 
 
 def atendimento_node(state: AgentState) -> dict:

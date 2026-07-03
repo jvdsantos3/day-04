@@ -72,6 +72,15 @@ def test_answer_mentions_percentage_ranges_and_spending_examples():
     assert "aluguel" in response.text  # Custos Fixos spending example
 
 
+def test_answer_cites_knowledge_base_sources(_mock_query_knowledge):
+    """VEC-03: the reply cites the collection + doc each retrieved fact came from."""
+    response = atendimento.answer("Quero montar um plano de gastos", llm=_EchoChatModel())
+
+    sources = response.metadata["sources"]
+    assert {"collection": "knowledge_base", "doc_id": "kb-custos_fixos"} in sources
+    assert len(sources) == len(_FIXTURE_DOCS)
+
+
 def test_atendimento_node_sets_final_response(monkeypatch):
     monkeypatch.setattr(atendimento, "get_atendimento_llm", lambda: _EchoChatModel())
     state = {
