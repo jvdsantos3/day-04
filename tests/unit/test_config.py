@@ -8,6 +8,7 @@ pytestmark = pytest.mark.unit
 
 ENV_VARS = [
     "DATABASE_URL",
+    "CHECKPOINT_DB_PATH",
     "CHROMA_PATH",
     "JWT_SECRET",
     "JWT_EXPIRE_MINUTES",
@@ -31,6 +32,7 @@ def test_defaults_applied_when_env_absent():
     settings = Settings(_env_file=None)
 
     assert settings.database_url == "sqlite:///./data/finance.db"
+    assert settings.checkpoint_db_path == "./data/langgraph_checkpoints.sqlite"
     assert settings.chroma_path == "./data/chroma"
     assert settings.jwt_secret == "change-me-in-production"
     assert settings.jwt_expire_minutes == 1440
@@ -41,6 +43,7 @@ def test_defaults_applied_when_env_absent():
 
 def test_loads_all_values_from_env_vars(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "sqlite:///./data/other.db")
+    monkeypatch.setenv("CHECKPOINT_DB_PATH", "/var/lib/checkpoints.sqlite")
     monkeypatch.setenv("CHROMA_PATH", "/var/chroma")
     monkeypatch.setenv("JWT_SECRET", "super-secret")
     monkeypatch.setenv("JWT_EXPIRE_MINUTES", "30")
@@ -51,6 +54,7 @@ def test_loads_all_values_from_env_vars(monkeypatch):
     settings = Settings(_env_file=None)
 
     assert settings.database_url == "sqlite:///./data/other.db"
+    assert settings.checkpoint_db_path == "/var/lib/checkpoints.sqlite"
     assert settings.chroma_path == "/var/chroma"
     assert settings.jwt_secret == "super-secret"
     assert settings.jwt_expire_minutes == 30

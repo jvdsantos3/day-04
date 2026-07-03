@@ -150,11 +150,11 @@ T12 ──→ T13 ──→ T14
 
 **Done when**:
 
-- [ ] `langgraph-checkpoint-sqlite` is added to dependencies and installed for the active environment.
-- [ ] `Settings` exposes a default checkpoint DB path, separate from `finance.db`.
-- [ ] `graph_config(session_id)` returns `{"configurable": {"thread_id": session_id}}`.
-- [ ] Checkpointer factory supports injected/in-memory saver for tests.
-- [ ] Quick gate passes.
+- [x] `langgraph-checkpoint-sqlite` is added to dependencies and installed for the active environment.
+- [x] `Settings` exposes a default checkpoint DB path, separate from `finance.db`.
+- [x] `graph_config(session_id)` returns `{"configurable": {"thread_id": session_id}}`.
+- [x] Checkpointer factory supports injected/in-memory saver for tests.
+- [x] Quick gate passes.
 
 **Tests**: unit  
 **Gate**: quick

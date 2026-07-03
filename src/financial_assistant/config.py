@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     # Structured persistence (SQLite = source of truth)
     database_url: str = "sqlite:///./data/finance.db"
+    checkpoint_db_path: str = "./data/langgraph_checkpoints.sqlite"
 
     # Vector persistence (ChromaDB semantic index)
     chroma_path: str = "./data/chroma"
