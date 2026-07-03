@@ -1,23 +1,43 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --color-income: #16a34a;
-  --color-expense: #dc2626;
+  --font-sans: Inter, ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
+  --color-income: #65f7b0;
+  --color-expense: #ff7a8a;
 }
 
 :root {
-  /* Paleta financeira */
-  --color-income: #16a34a; /* verde receita */
-  --color-expense: #dc2626; /* vermelho despesa */
-  --color-neutral-bg: #ffffff;
-  --color-neutral-text: #1f2937;
-  --color-neutral-border: #e5e7eb;
+  --color-income: #65f7b0;
+  --color-expense: #ff7a8a;
+  --color-neutral-bg: #07111f;
+  --color-neutral-text: #eef7ff;
+  --color-neutral-border: rgba(148, 163, 184, 0.22);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: Inter, ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
   color: var(--color-neutral-text);
-  background: var(--color-neutral-bg);
+  background:
+    radial-gradient(circle at top left, rgba(101, 247, 176, 0.2), transparent 34rem),
+    radial-gradient(circle at 80% 10%, rgba(56, 189, 248, 0.18), transparent 30rem),
+    linear-gradient(145deg, #07111f 0%, #0a1322 45%, #111827 100%);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(101, 247, 176, 0.28);
+  color: #ffffff;
 }
