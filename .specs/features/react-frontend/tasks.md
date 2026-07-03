@@ -136,7 +136,7 @@
 
 ---
 
-### T7 — Tailwind CSS + design tokens
+### T7 — Tailwind CSS + design tokens — DONE (b15bd58)
 
 **Scope:** `frontend/tailwind.config.ts`, `src/index.css`
 
