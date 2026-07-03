@@ -146,7 +146,7 @@
 - **Verify**: `tests/integration/test_mcp.py::test_chroma_search_isolation`, `test_chroma_fallback_sqlite_like`
 - **Commit**: `feat: add chroma-mcp server`
 
-### T18: MCP client adapter + fallback
+### T18: MCP client adapter + fallback ✅ done
 - **Requirement**: MCP-03
 - **Action**: MultiServerMCPClient wrapper with in-process fallback
 - **Verify**: `test_mcp_fallback_on_failure`

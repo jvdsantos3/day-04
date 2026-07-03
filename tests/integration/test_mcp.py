@@ -26,6 +26,7 @@ chroma-mcp (T17) coverage:
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import date
 from decimal import Decimal
@@ -48,6 +49,7 @@ from financial_assistant.domain.models import (
 from financial_assistant.domain.repositories.transaction_repository import (
     TransactionRepository,
 )
+from financial_assistant.mcp import client as mcp_client
 from financial_assistant.vector import client as vector_client
 from financial_assistant.vector import indexer as indexer_module
 from financial_assistant.vector import knowledge_seed as knowledge_seed_module
@@ -511,3 +513,41 @@ def test_chroma_save_working_memory_persists_fact(chroma, monkeypatch):
     assert stored["documents"][0] == fact
     assert stored["metadatas"][0]["user_id"] == ana_id
     assert stored["metadatas"][0]["valor_estimado"] == 8000
+
+
+# ---------------------------------------------------------------------------
+# MCP client adapter + fallback (T18)
+# ---------------------------------------------------------------------------
+
+
+class _FailingMCPClient:
+    """Stand-in for ``MultiServerMCPClient`` whose init/handshake fails (e.g. server won't spawn)."""
+
+    async def get_tools(self):
+        raise RuntimeError("mcp server failed to start")
+
+
+_EXPECTED_FALLBACK_TOOL_NAMES = {
+    "create_transaction",
+    "list_transactions",
+    "get_budget_summary",
+    "get_balance",
+    "update_transaction",
+    "delete_transaction",
+    "search_transactions",
+    "find_similar_transactions",
+    "query_knowledge",
+    "get_chat_context",
+    "save_working_memory",
+}
+
+
+async def test_mcp_fallback_on_failure(caplog):
+    """MCP-03: when the MCP client fails to initialize, the system logs a warning and starts with in-process tools."""
+    with caplog.at_level(logging.WARNING):
+        tools = await mcp_client.get_mcp_tools(client=_FailingMCPClient())
+
+    assert {tool.name for tool in tools} == _EXPECTED_FALLBACK_TOOL_NAMES
+    assert any(
+        "falling back to in-process tools" in record.message for record in caplog.records
+    )
