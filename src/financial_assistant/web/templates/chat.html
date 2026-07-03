@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Chat — Assistente Financeiro{% endblock %}
+
+{% block content %}
+<h1>Chat</h1>
+
+<div id="chat-messages" class="chat-messages"></div>
+
+<form id="chat-form" class="chat-form">
+  <input
+    type="text"
+    id="chat-input"
+    name="message"
+    placeholder="Ex.: Gastei 20 reais num pedido de delivery"
+    autocomplete="off"
+    required
+  >
+  <button type="submit">Enviar</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const sessionId = crypto.randomUUID();
+    const form = document.getElementById("chat-form");
+    const input = document.getElementById("chat-input");
+    const messages = document.getElementById("chat-messages");
+
+    function appendMessage(role, text) {
+      const el = document.createElement("p");
+      el.className = "chat-message chat-message-" + role;
+      el.textContent = (role === "user" ? "Você: " : "Assistente: ") + text;
+      messages.appendChild(el);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    async function sendMessage(message) {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: message, session_id: sessionId }),
+      });
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const rawEvents = buffer.split("\n\n");
+        buffer = rawEvents.pop();
+        for (const rawEvent of rawEvents) {
+          const dataLines = rawEvent
+            .split("\n")
+            .filter((line) => line.startsWith("data: "))
+            .map((line) => line.slice("data: ".length));
+          if (!dataLines.length) continue;
+          const payload = dataLines.join("\n");
+          try {
+            const parsed = JSON.parse(payload);
+            appendMessage("assistant", parsed.text);
+          } catch (err) {
+            // Non-JSON control events (e.g. the "done" marker) are ignored.
+          }
+        }
+      }
+    }
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      const message = input.value.trim();
+      if (!message) return;
+      appendMessage("user", message);
+      input.value = "";
+      sendMessage(message);
+    });
+  })();
+</script>
+{% endblock %}

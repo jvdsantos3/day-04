@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from financial_assistant.auth.router import router as auth_router
+from financial_assistant.chat.router import router as chat_router
 from financial_assistant.web.router import router as web_router
 
 _STATIC_DIR = Path(__file__).resolve().parent / "web" / "static"
@@ -22,6 +23,7 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
     app.include_router(auth_router)
     app.include_router(web_router)
+    app.include_router(chat_router)
     return app
 
 

@@ -666,9 +666,9 @@ Fixture de teste para cenário 3: receita R$ 5.000 + despesas desbalanceadas (Cu
 
 | Requirement ID | Story                  | Phase  | Status  |
 | -------------- | ---------------------- | ------ | ------- |
-| CHAT-01        | P1: Registrar via chat | T22    | Partial |
-| CHAT-02        | P1: Registrar via chat | T11, T22 | Partial |
-| CHAT-03        | P1: Registrar via chat | T22    | Partial |
+| CHAT-01        | P1: Registrar via chat | T22, T25, T29 | Done |
+| CHAT-02        | P1: Registrar via chat | T11, T22, T29 | Done |
+| CHAT-03        | P1: Registrar via chat | T22, T29 | Done |
 | TBL-01         | P1: Tabela             | T27    | Done    |
 | TBL-02         | P1: Tabela             | T27    | Done    |
 | TBL-03         | P1: Tabela             | T28    | Done    |
@@ -700,7 +700,7 @@ Fixture de teste para cenário 3: receita R$ 5.000 + despesas desbalanceadas (Cu
 | WEB-02         | P1: Dashboard          | T27    | Done    |
 | WEB-03         | P1: Dashboard          | T27    | Done    |
 | WEB-04         | P1: Dashboard          | T28    | Done    |
-| WEB-05         | P1: Dashboard          | Design | Pending |
+| WEB-05         | P1: Dashboard          | T29    | Done    |
 | CONV-01        | P1: Conversação        | T21    | Partial |
 | CONV-02        | P1: Conversação        | T22    | Partial |
 | CONV-03        | P1: Conversação        | T10    | Partial |

@@ -220,7 +220,7 @@
 - **Verify**: `test_dashboard_filter_by_category`
 - **Commit**: `feat: add dashboard htmx filters`
 
-### T29: Chat page + SSE endpoint
+### T29: Chat page + SSE endpoint ✅ done
 - **Requirement**: WEB-05, CHAT-01
 - **Action**: `/chat` UI + `POST /api/chat` SSE streaming from graph
 - **Verify**: `test_chat_endpoint_requires_auth`
