@@ -189,15 +189,17 @@
 
 ---
 
-### T11 — Auth guard + useAuth hook (UI-AUTH-03)
+### T11 — Auth guard + useAuth hook (UI-AUTH-03) — DONE (2271cff)
 
-**Scope:** `hooks/useAuth.ts`, `components/ProtectedRoute.tsx`
+**Scope:** `hooks/useAuth.tsx`, `components/ProtectedRoute.tsx`, e extensão justificada: `App.tsx`, `layouts/AppLayout.tsx` (boundary shift documentado — T8 deixou nota explícita de que o guard real de `/` e o header dinâmico dependiam do `useAuth`, que só nasce nesta task; nenhuma outra task do plano toca esses arquivos depois)
 
-- `GET /api/auth/me` on mount
-- 401 → redirect `/login`
+- `GET /api/auth/me` on mount (via `AuthProvider`/Context, evita chamadas duplicadas)
+- 401 → `user=null` sem crash; `ProtectedRoute` redireciona `/login`
 - Logout chama `POST /api/auth/logout`
+- `App.tsx`: `/` vira `RootRedirect` (usa `useAuth`); `/dashboard` e `/chat` envolvidos por `ProtectedRoute`
+- `AppLayout.tsx`: header dinâmico (nome, links Dashboard/Chat, Sair) quando autenticado; mínimo quando não
 
-**Verify:** Vitest `useAuth.test.ts`
+**Verify:** Vitest `useAuth.test.tsx`
 
 **Depends on:** T9, T10
 
