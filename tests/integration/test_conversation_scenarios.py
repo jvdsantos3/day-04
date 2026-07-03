@@ -29,7 +29,8 @@ from sqlalchemy.pool import StaticPool
 
 from financial_assistant.agents import graph as graph_module
 from financial_assistant.agents import orchestrator
-from financial_assistant.agents.specialists import atendimento, transacoes
+from financial_assistant.agents import validator as validator_module
+from financial_assistant.agents.specialists import atendimento, orcamento, transacoes
 from financial_assistant.contracts.agent_response import Intent, IntentClassification
 from financial_assistant.db.session import Base
 from financial_assistant.domain.budget_defaults import seed_budget_targets
@@ -143,3 +144,60 @@ def test_delivery_categorization_prazeres_real_deepseek(graph):
 
     assert response.suggested_category == "prazeres"
     assert response.action == "offer_register"
+
+
+# --- T32: "Em quais categorias devo economizar?" (CONV-03) -------------------
+
+
+def _unbalanced_summary() -> dict:
+    return {
+        "month": "2026-07",
+        "total_income": "5000.00",
+        "has_income": True,
+        "warning": None,
+        "categories": [
+            {
+                "category": "custos_fixos",
+                "spent": "2500.00",
+                "pct": 50.0,
+                "min_pct": 30.0,
+                "max_pct": 40.0,
+                "target_pct": 35.0,
+                "status": "alerta",
+                "remaining_pct": -10.0,
+                "over_amount": "500.00",
+            },
+            {
+                "category": "conforto",
+                "spent": "500.00",
+                "pct": 10.0,
+                "min_pct": 15.0,
+                "max_pct": 20.0,
+                "target_pct": 17.0,
+                "status": "ok",
+                "remaining_pct": 10.0,
+                "over_amount": "0",
+            },
+        ],
+    }
+
+
+@pytest.mark.integration
+def test_economizar_categories_advice(graph, monkeypatch):
+    user_id = graph
+    _mock_classify_intent(monkeypatch, Intent.BUDGET_ADVICE)
+    summary = _unbalanced_summary()
+    monkeypatch.setattr(orcamento, "_get_budget_summary", lambda **kwargs: summary)
+    monkeypatch.setattr(
+        validator_module,
+        "_get_balance",
+        lambda **kwargs: {"total_income": "5000.00", "total_expense": "3000.00", "balance": "2000.00"},
+    )
+    monkeypatch.setattr(validator_module, "_get_budget_summary", lambda **kwargs: summary)
+
+    response = graph_module.run(
+        user_id, "sess-economizar", "Em quais categorias devo prestar mais atenção ou economizar?"
+    )
+
+    assert "custos_fixos" in response.text
+    assert "conforto" not in response.text  # within faixa, not flagged
