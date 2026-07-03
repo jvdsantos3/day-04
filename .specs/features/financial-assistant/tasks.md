@@ -214,7 +214,7 @@
 - **Verify**: `tests/integration/test_dashboard.py::test_dashboard_shows_percentages`
 - **Commit**: `feat: add dashboard page`
 
-### T28: Dashboard HTMX filters
+### T28: Dashboard HTMX filters ✅ done
 - **Requirement**: WEB-04, TBL-03
 - **Action**: `/dashboard/transactions` partial with month/category filters
 - **Verify**: `test_dashboard_filter_by_category`

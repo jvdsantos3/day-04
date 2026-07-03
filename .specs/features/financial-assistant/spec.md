@@ -669,9 +669,9 @@ Fixture de teste para cenário 3: receita R$ 5.000 + despesas desbalanceadas (Cu
 | CHAT-01        | P1: Registrar via chat | T22    | Partial |
 | CHAT-02        | P1: Registrar via chat | T11, T22 | Partial |
 | CHAT-03        | P1: Registrar via chat | T22    | Partial |
-| TBL-01         | P1: Tabela             | Design | Pending |
-| TBL-02         | P1: Tabela             | Design | Pending |
-| TBL-03         | P1: Tabela             | Design | Pending |
+| TBL-01         | P1: Tabela             | T27    | Done    |
+| TBL-02         | P1: Tabela             | T27    | Done    |
+| TBL-03         | P1: Tabela             | T28    | Done    |
 | BUD-01         | P1: Orçamento          | T4, T10 | Partial |
 | BUD-02         | P1: Orçamento          | T10    | Partial |
 | BUD-03         | P1: Orçamento          | T10    | Partial |
@@ -699,7 +699,7 @@ Fixture de teste para cenário 3: receita R$ 5.000 + despesas desbalanceadas (Cu
 | WEB-01         | P1: Dashboard          | T26, T27 | Done |
 | WEB-02         | P1: Dashboard          | T27    | Done    |
 | WEB-03         | P1: Dashboard          | T27    | Done    |
-| WEB-04         | P1: Dashboard          | Design | Pending |
+| WEB-04         | P1: Dashboard          | T28    | Done    |
 | WEB-05         | P1: Dashboard          | Design | Pending |
 | CONV-01        | P1: Conversação        | T21    | Partial |
 | CONV-02        | P1: Conversação        | T22    | Partial |

@@ -17,16 +17,16 @@
 {% endif %}
 
 <section class="category-cards">
-  {% for category in summary.categories %}
-  <div class="category-card{{ ' alerta' if category.status == 'alerta' else '' }}">
-    <h3>{{ category_labels[category.category] }}</h3>
+  {% for cat_budget in summary.categories %}
+  <div class="category-card{{ ' alerta' if cat_budget.status == 'alerta' else '' }}">
+    <h3>{{ category_labels[cat_budget.category] }}</h3>
     <div class="progress-bar">
-      <div class="progress-bar-fill" style="width: {{ [category.pct, 100] | min }}%"></div>
+      <div class="progress-bar-fill" style="width: {{ [cat_budget.pct, 100] | min }}%"></div>
     </div>
     <p>
-      {{ "%.1f"|format(category.pct) }}%
+      {{ "%.1f"|format(cat_budget.pct) }}%
       <span class="target">
-        (faixa {% if category.max_pct >= 100 %}≥{{ category.min_pct | int }}{% else %}{{ category.min_pct | int }}–{{ category.max_pct | int }}{% endif %}%)
+        (faixa {% if cat_budget.max_pct >= 100 %}≥{{ cat_budget.min_pct | int }}{% else %}{{ cat_budget.min_pct | int }}–{{ cat_budget.max_pct | int }}{% endif %}%)
       </span>
     </p>
   </div>
@@ -34,34 +34,24 @@
 </section>
 
 <section class="transactions">
-  <h2>Transações — {{ month }}</h2>
-  {% if transactions %}
-  <table>
-    <thead>
-      <tr>
-        <th>Data</th>
-        <th>Descrição</th>
-        <th>Tipo</th>
-        <th>Valor</th>
-        <th>Categoria</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for transaction in transactions %}
-      <tr>
-        <td>{{ transaction.date.isoformat() }}</td>
-        <td>{{ transaction.description }}</td>
-        <td>{{ "Receita" if transaction.type.value == "receita" else "Despesa" }}</td>
-        <td>R$ {{ "%.2f"|format(transaction.amount) }}</td>
-        <td>{{ category_labels[transaction.category] if transaction.category else "—" }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p class="empty-state">
-    Nenhuma transação registrada em {{ month }} ainda. Comece pelo <a href="/chat">chat</a> contando sua receita do mês.
-  </p>
-  {% endif %}
+  <h2>Transações</h2>
+  <form class="filters" hx-get="/dashboard/transactions" hx-target="#transactions-table" hx-trigger="change">
+    <label>
+      Mês
+      <input type="month" name="month" value="{{ month or '' }}">
+    </label>
+    <label>
+      Categoria
+      <select name="category">
+        <option value="" {{ "selected" if not category else "" }}>Todas as categorias</option>
+        {% for value, label in category_labels.items() %}
+        <option value="{{ value.value }}" {{ "selected" if category == value else "" }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </form>
+  <div id="transactions-table">
+    {% include "_transactions_table.html" %}
+  </div>
 </section>
 {% endblock %}

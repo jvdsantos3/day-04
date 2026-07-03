@@ -1,4 +1,5 @@
-"""Integration tests for the dashboard page (T27, WEB-01/02/03).
+"""Integration tests for the dashboard page (T27, WEB-01/02/03) and its HTMX
+transaction filters (T28, WEB-04/TBL-03).
 
 Same isolation pattern as ``test_auth.py``: a ``TestClient`` wired to an
 in-memory SQLite DB via a ``get_db`` override, with a signed session cookie
@@ -172,3 +173,132 @@ def test_dashboard_flags_category_over_its_faixa_as_alerta(client):
 
     assert response.status_code == 200
     assert 'class="category-card alerta"' in response.text
+
+
+def test_dashboard_page_wires_htmx_filter_form_to_the_partial(client):
+    """WEB-04: the dashboard's filter form targets the /dashboard/transactions partial."""
+    test_client, session_factory = client
+    user_id = _seed_user_with_transactions(session_factory)
+    _login_as(test_client, user_id)
+
+    response = test_client.get("/dashboard")
+
+    assert response.status_code == 200
+    assert 'hx-get="/dashboard/transactions"' in response.text
+    assert 'hx-target="#transactions-table"' in response.text
+
+
+def _seed_user_with_varied_transactions(session_factory) -> str:
+    """Two categories, two months — enough to prove filters actually filter (TBL-03)."""
+    with session_factory() as db:
+        user = User(name="Dora", email="dora@example.com", password_hash="x")
+        db.add(user)
+        db.flush()
+        seed_budget_targets(db, user.id)
+        db.add_all(
+            [
+                Transaction(
+                    user_id=user.id,
+                    date=date(2026, 7, 5),
+                    description="aluguel de julho",
+                    type=TransactionType.EXPENSE,
+                    amount=Decimal("2000.00"),
+                    category=BudgetCategory.FIXED,
+                ),
+                Transaction(
+                    user_id=user.id,
+                    date=date(2026, 7, 10),
+                    description="cinema",
+                    type=TransactionType.EXPENSE,
+                    amount=Decimal("50.00"),
+                    category=BudgetCategory.PLEASURES,
+                ),
+                Transaction(
+                    user_id=user.id,
+                    date=date(2026, 6, 5),
+                    description="aluguel de junho",
+                    type=TransactionType.EXPENSE,
+                    amount=Decimal("1900.00"),
+                    category=BudgetCategory.FIXED,
+                ),
+            ]
+        )
+        db.commit()
+        return str(user.id)
+
+
+def test_dashboard_transactions_partial_filters_by_category(client):
+    """TBL-03: filtering by category returns only matching rows."""
+    test_client, session_factory = client
+    user_id = _seed_user_with_varied_transactions(session_factory)
+    _login_as(test_client, user_id)
+
+    response = test_client.get("/dashboard/transactions", params={"category": "prazeres"})
+
+    assert response.status_code == 200
+    assert "cinema" in response.text
+    assert "aluguel de julho" not in response.text
+    assert "aluguel de junho" not in response.text
+    # A bare partial, not the full page shell.
+    assert "<html" not in response.text
+
+
+def test_dashboard_transactions_partial_filters_by_month(client):
+    """TBL-03: filtering by month returns only that month's rows, across categories."""
+    test_client, session_factory = client
+    user_id = _seed_user_with_varied_transactions(session_factory)
+    _login_as(test_client, user_id)
+
+    response = test_client.get("/dashboard/transactions", params={"month": "2026-06"})
+
+    assert response.status_code == 200
+    assert "aluguel de junho" in response.text
+    assert "aluguel de julho" not in response.text
+    assert "cinema" not in response.text
+
+
+def test_dashboard_transactions_partial_combines_filters(client):
+    """TBL-03: month and category filters combine (AND), not just either alone."""
+    test_client, session_factory = client
+    user_id = _seed_user_with_varied_transactions(session_factory)
+    _login_as(test_client, user_id)
+
+    response = test_client.get(
+        "/dashboard/transactions", params={"month": "2026-07", "category": "custos_fixos"}
+    )
+
+    assert response.status_code == 200
+    assert "aluguel de julho" in response.text
+    assert "aluguel de junho" not in response.text
+    assert "cinema" not in response.text
+
+
+def test_dashboard_transactions_partial_empty_month_means_all_time(client):
+    """An explicitly empty month query param clears the filter (all-time), not zero rows."""
+    test_client, session_factory = client
+    user_id = _seed_user_with_varied_transactions(session_factory)
+    _login_as(test_client, user_id)
+
+    response = test_client.get("/dashboard/transactions", params={"month": ""})
+
+    assert response.status_code == 200
+    assert "aluguel de julho" in response.text
+    assert "aluguel de junho" in response.text
+    assert "cinema" in response.text
+
+
+def test_dashboard_transactions_partial_rejects_invalid_category(client):
+    test_client, session_factory = client
+    user_id = _seed_user_with_varied_transactions(session_factory)
+    _login_as(test_client, user_id)
+
+    response = test_client.get("/dashboard/transactions", params={"category": "not-a-category"})
+
+    assert response.status_code == 400
+
+
+def test_dashboard_transactions_partial_requires_auth(client):
+    test_client, _ = client
+    response = test_client.get("/dashboard/transactions", follow_redirects=False)
+    assert response.status_code == 302
+    assert response.headers["location"].startswith("/login")

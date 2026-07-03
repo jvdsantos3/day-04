@@ -3,16 +3,19 @@
 ``/dashboard`` (T27, WEB-01/02/03) renders the current month's picture for
 the authenticated user: income/expense totals, one progress card per budget
 category (``BudgetService.get_summary``, T10), and the month's transaction
-table (``TransactionRepository.list``, T9). The ``get_current_user``
-dependency enforces authentication; unauthenticated requests are redirected
-to /login before this handler runs (AUTH-05).
+table (``TransactionRepository.list``, T9). ``/dashboard/transactions``
+(T28, WEB-04/TBL-03) is the HTMX partial the dashboard's filter form targets
+to re-render just the table on a month/category change, without a full page
+reload. The ``get_current_user`` dependency enforces authentication;
+unauthenticated requests are redirected to /login before either handler runs
+(AUTH-05).
 """
 
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -42,6 +45,15 @@ CATEGORY_LABELS: dict[BudgetCategory, str] = {
 }
 
 
+def _parse_category(category: str | None) -> BudgetCategory | None:
+    if not category:
+        return None
+    try:
+        return BudgetCategory(category)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Categoria inválida") from None
+
+
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard(
     request: Request,
@@ -58,8 +70,35 @@ def dashboard(
         {
             "user": user,
             "month": month,
+            "category": None,
             "summary": summary,
             "total_expense": total_expense,
+            "transactions": transactions,
+            "category_labels": CATEGORY_LABELS,
+        },
+    )
+
+
+@router.get("/dashboard/transactions", response_class=HTMLResponse)
+def dashboard_transactions(
+    request: Request,
+    month: str | None = None,
+    category: str | None = None,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """HTMX partial (WEB-04): the transaction table filtered by month/category (TBL-03)."""
+    month_filter = month or None
+    category_filter = _parse_category(category)
+    transactions = TransactionRepository(db).list(
+        user.id, month=month_filter, category=category_filter
+    )
+    return templates.TemplateResponse(
+        request,
+        "_transactions_table.html",
+        {
+            "month": month_filter,
+            "category": category_filter,
             "transactions": transactions,
             "category_labels": CATEGORY_LABELS,
         },
