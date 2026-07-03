@@ -55,7 +55,7 @@
 
 ## Phase 1: Backend JSON API
 
-### T1 — JSON auth endpoints (AUTH-API-01, AUTH-API-02, AUTH-API-04)
+### T1 — JSON auth endpoints (AUTH-API-01, AUTH-API-02, AUTH-API-04) — DONE (a524462)
 
 **Scope:** `src/financial_assistant/api/auth_router.py`, `schemas.py`
 
