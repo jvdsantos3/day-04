@@ -69,7 +69,7 @@
 
 ---
 
-### T2 — GET /api/auth/me (AUTH-API-03)
+### T2 — GET /api/auth/me (AUTH-API-03) — DONE (18e72c2)
 
 **Scope:** `auth_router.py`
 

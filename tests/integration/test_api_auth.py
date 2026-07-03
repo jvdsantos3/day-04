@@ -189,3 +189,39 @@ def test_logout_clears_cookie(client):
     assert resp.json() == {"ok": True}
     # The access_token cookie is cleared.
     assert test_client.cookies.get("access_token") in (None, "")
+
+
+# --- T2: /api/auth/me ----------------------------------------------------
+
+
+def test_me_returns_current_user_with_valid_cookie(client):
+    test_client, _ = client
+    _register(test_client)  # sets the session cookie on the client
+
+    resp = test_client.get("/api/auth/me")
+
+    # AUTH-API-03: flat {id, name, email} (NOT nested under "user").
+    assert resp.status_code == 200
+    body = resp.json()
+    assert set(body.keys()) == {"id", "name", "email"}
+    assert body["name"] == VALID["name"]
+    assert body["email"] == VALID["email"]
+    assert body["id"]  # non-empty id string
+
+
+def test_me_without_cookie_returns_401(client):
+    test_client, _ = client
+
+    resp = test_client.get("/api/auth/me")
+
+    # AUTH-API-03: no cookie -> 401 (reuses get_current_user_api).
+    assert resp.status_code == 401
+
+
+def test_me_with_invalid_cookie_returns_401(client):
+    test_client, _ = client
+    test_client.cookies.set("access_token", "not-a-valid-jwt")
+
+    resp = test_client.get("/api/auth/me")
+
+    assert resp.status_code == 401

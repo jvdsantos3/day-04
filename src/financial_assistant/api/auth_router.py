@@ -13,7 +13,10 @@ from fastapi.responses import JSONResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from financial_assistant.auth.dependencies import SESSION_COOKIE_NAME
+from financial_assistant.auth.dependencies import (
+    SESSION_COOKIE_NAME,
+    get_current_user_api,
+)
 from financial_assistant.auth.router import (
     DUPLICATE_EMAIL_MESSAGE,
     INVALID_CREDENTIALS_MESSAGE,
@@ -92,3 +95,13 @@ def logout() -> Response:
     response = JSONResponse(status_code=status.HTTP_200_OK, content={"ok": True})
     response.delete_cookie(key=SESSION_COOKIE_NAME)
     return response
+
+
+@router.get("/auth/me")
+def me(user: User = Depends(get_current_user_api)) -> dict:
+    """Return the authenticated user ``{id, name, email}`` (AUTH-API-03).
+
+    Flat (not nested under ``user``) to match design.md's ``/api/auth/me``
+    example. Unauthenticated callers get a 401 via ``get_current_user_api``.
+    """
+    return UserOut.model_validate(user, from_attributes=True).model_dump()
