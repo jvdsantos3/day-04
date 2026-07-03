@@ -178,7 +178,7 @@ O assistente financeiro entrega todas as telas via Jinja2 + HTMX servidas pelo F
 | AUTH-API-04 | P1: Auth | Design | Done (T1) |
 | API-DASH-01 | P1: Dashboard | Design | Done (T3) |
 | API-DASH-02 | P1: Dashboard | Design | Done (T4) |
-| UI-AUTH-01 | P1: Auth | Design | Pending |
+| UI-AUTH-01 | P1: Auth | Design | Done (T9/5751965) |
 | UI-AUTH-02 | P1: Auth | Design | Pending |
 | UI-AUTH-03 | P1: Auth | Design | Pending |
 | UI-DASH-01 | P1: Dashboard | Design | Pending |

@@ -165,7 +165,7 @@
 
 ## Phase 3: Auth UI
 
-### T9 — Login page (UI-AUTH-01)
+### T9 — Login page (UI-AUTH-01) — DONE (5751965)
 
 **Scope:** `pages/Login.tsx`
 
