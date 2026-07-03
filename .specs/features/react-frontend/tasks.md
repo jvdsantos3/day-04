@@ -177,7 +177,7 @@
 
 ---
 
-### T10 — Register page (UI-AUTH-02)
+### T10 — Register page (UI-AUTH-02) — DONE (eb6e163)
 
 **Scope:** `pages/Register.tsx`
 
