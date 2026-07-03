@@ -207,7 +207,7 @@
 
 ## Phase 4: Dashboard UI
 
-### T12 — Dashboard summary cards (UI-DASH-01, UI-FMT-01) — DONE (pending-hash)
+### T12 — Dashboard summary cards (UI-DASH-01, UI-FMT-01) — DONE (cbcbe43)
 
 **Scope:** `pages/Dashboard.tsx`, `components/CategoryCard.tsx`, `components/Money.tsx`
 
@@ -221,7 +221,7 @@
 
 ---
 
-### T13 — Transaction filters + table (UI-DASH-02, UI-DASH-03)
+### T13 — Transaction filters + table (UI-DASH-02, UI-DASH-03) — DONE (pending-hash)
 
 **Scope:** `components/TransactionFilters.tsx`, `TransactionTable.tsx`
 
