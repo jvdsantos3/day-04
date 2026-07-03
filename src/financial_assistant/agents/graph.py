@@ -3,11 +3,10 @@
 Wires the ``orchestrator`` and ``validator`` nodes per design.md's "LangGraph
 Agent Graph" flow (``[*] --> orchestrator --> ... --> validator --> [*]``),
 satisfying ORCH-01's "o sistema SHALL conectar aos servidores ... e carregar
-tools dinamicamente" prerequisite of a compilable graph. Both nodes are
-stubs: intent classification (T20), the specialist branches (T21-23) and the
-validator's reject-and-retry edge back to orchestrator (T25 "Wire full
-graph") are not implemented yet — this task only establishes the skeleton
-compiles.
+tools dinamicamente" prerequisite of a compilable graph. ``orchestrator_node``
+now classifies intent (T20, see ``agents/orchestrator.py``); the specialist
+branches (T21-23) and the validator's reject-and-retry edge back to
+orchestrator (T25 "Wire full graph") are not implemented yet.
 """
 
 from __future__ import annotations
@@ -15,12 +14,8 @@ from __future__ import annotations
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
+from financial_assistant.agents.orchestrator import orchestrator_node
 from financial_assistant.agents.state import AgentState
-
-
-def orchestrator_node(state: AgentState) -> dict:
-    """Stub — intent classification lands in T20."""
-    return {}
 
 
 def validator_node(state: AgentState) -> dict:
