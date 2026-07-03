@@ -19,6 +19,18 @@ Transações specialist, T22) is added to the known-amounts set before
 checking — it's not an aggregate from get_balance/get_budget_summary, but
 it *is* the value the specialist just persisted, so citing it back isn't an
 inconsistency to block.
+
+Bug found via live testing against the real DeepSeek API (not caught by any
+mocked unit test): the Atendimento specialist's ``explain_budget`` answer
+(CONV-01) is explicitly spec'd to work "sem exigir transações
+pré-existentes" — it cites the knowledge base's percentage *ranges* and
+walks through an illustrative example (e.g. "se sua renda for R$ 5.000,
+Custos Fixos em 35% seria R$ 1.750"). Those figures are pedagogical, not a
+claim about this user's actual balance, so checking them against
+``get_balance``/``get_budget_summary`` rejected every real answer to
+"quero montar um plano de gastos". The currency/percent check therefore
+is skipped for that one intent (``explain_budget``) — see
+``_SKIPS_FINANCIAL_FIGURE_CHECK_FOR``.
 """
 
 from __future__ import annotations
@@ -32,12 +44,20 @@ from typing import Callable
 from pydantic import ValidationError
 
 from financial_assistant.agents.state import AgentState
-from financial_assistant.contracts.agent_response import AgentResponse
+from financial_assistant.contracts.agent_response import AgentResponse, Intent
 from financial_assistant.domain.models import BudgetCategory
 from mcp_servers.finance.server import get_balance as _get_balance
 from mcp_servers.finance.server import get_budget_summary as _get_budget_summary
 
 MAX_VALIDATION_ATTEMPTS = 2
+
+# The R$/percent consistency check (VAL-03, CONV-05) is skipped only for this
+# intent: Atendimento's ``explain_budget`` answer cites illustrative
+# ranges/examples from the knowledge base, not claims about this user's real
+# data (spec CONV-01, "sem exigir transações pré-existentes"). Every other
+# intent — including an unknown/unset one — still gets checked; this is a
+# deny-list, not an allow-list, so the safety check fails closed by default.
+_SKIPS_FINANCIAL_FIGURE_CHECK_FOR = {Intent.EXPLAIN_BUDGET.value}
 
 FALLBACK_TEXT = (
     "Não consegui confirmar essa resposta com segurança. Pode reformular a "
@@ -135,6 +155,7 @@ def validate(
     response: object,
     *,
     user_id: str,
+    intent: str | None = None,
     month: str | None = None,
     get_balance: Callable[..., dict] | None = None,
     get_budget_summary: Callable[..., dict] | None = None,
@@ -152,6 +173,9 @@ def validate(
             BudgetCategory(checked.suggested_category)
         except ValueError:
             return ValidationResult(False, f"categoria inválida: {checked.suggested_category!r}")
+
+    if intent in _SKIPS_FINANCIAL_FIGURE_CHECK_FOR:
+        return ValidationResult(True, None)
 
     amounts = _extract_currency_values(checked.text)
     percents = _extract_percent_values(checked.text)
@@ -188,6 +212,7 @@ def validator_node(
     result = validate(
         state["final_response"],
         user_id=state["user_id"],
+        intent=state.get("intent"),
         get_balance=get_balance,
         get_budget_summary=get_budget_summary,
     )

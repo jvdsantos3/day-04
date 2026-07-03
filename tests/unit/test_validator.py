@@ -60,12 +60,18 @@ def _fakes(balance: dict, summary: dict):
     return (lambda **kwargs: balance), (lambda **kwargs: summary)
 
 
-def _state(*, final_response, validation_attempts: int = 0, agent_notes: list[str] | None = None) -> dict:
+def _state(
+    *,
+    final_response,
+    validation_attempts: int = 0,
+    agent_notes: list[str] | None = None,
+    intent: str | None = "budget_advice",
+) -> dict:
     return {
         "messages": [],
         "user_id": "u1",
         "session_id": "s1",
-        "intent": None,
+        "intent": intent,
         "retrieved_context": [],
         "pending_action": None,
         "agent_notes": agent_notes if agent_notes is not None else [],
@@ -107,7 +113,13 @@ def test_validate_approves_consistent_balance_mention():
     get_balance, get_budget_summary = _fakes(balance, summary)
 
     response = AgentResponse(text="Seu saldo atual é de R$ 2000.00.")
-    result = validate(response, user_id="u1", get_balance=get_balance, get_budget_summary=get_budget_summary)
+    result = validate(
+        response,
+        user_id="u1",
+        intent="budget_advice",
+        get_balance=get_balance,
+        get_budget_summary=get_budget_summary,
+    )
 
     assert result.approved is True
 
@@ -119,7 +131,13 @@ def test_validate_rejects_wrong_balance():
     get_balance, get_budget_summary = _fakes(balance, summary)
 
     response = AgentResponse(text="Seu saldo atual é de R$ 9999.00.")
-    result = validate(response, user_id="u1", get_balance=get_balance, get_budget_summary=get_budget_summary)
+    result = validate(
+        response,
+        user_id="u1",
+        intent="budget_advice",
+        get_balance=get_balance,
+        get_budget_summary=get_budget_summary,
+    )
 
     assert result.approved is False
     assert "VAL-03" in result.reason
@@ -131,7 +149,13 @@ def test_validate_rejects_wrong_budget_percentage():
     get_balance, get_budget_summary = _fakes(balance, summary)
 
     response = AgentResponse(text="Você já usou 99.0% da faixa de prazeres.")
-    result = validate(response, user_id="u1", get_balance=get_balance, get_budget_summary=get_budget_summary)
+    result = validate(
+        response,
+        user_id="u1",
+        intent="budget_advice",
+        get_balance=get_balance,
+        get_budget_summary=get_budget_summary,
+    )
 
     assert result.approved is False
     assert "CONV-05" in result.reason
@@ -143,7 +167,13 @@ def test_validate_approves_correct_budget_percentage():
     get_balance, get_budget_summary = _fakes(balance, summary)
 
     response = AgentResponse(text="Você já usou 30.0% da faixa de prazeres (até 40.0%).")
-    result = validate(response, user_id="u1", get_balance=get_balance, get_budget_summary=get_budget_summary)
+    result = validate(
+        response,
+        user_id="u1",
+        intent="budget_advice",
+        get_balance=get_balance,
+        get_budget_summary=get_budget_summary,
+    )
 
     assert result.approved is True
 
@@ -159,9 +189,56 @@ def test_validate_approves_just_registered_transaction_amount():
         action="registered",
         metadata={"transaction": {"amount": "20"}},
     )
-    result = validate(response, user_id="u1", get_balance=get_balance, get_budget_summary=get_budget_summary)
+    result = validate(
+        response,
+        user_id="u1",
+        intent="register_transaction",
+        get_balance=get_balance,
+        get_budget_summary=get_budget_summary,
+    )
 
     assert result.approved is True
+
+
+def test_validate_skips_financial_check_for_explain_budget_illustrative_figures():
+    """CONV-01: Atendimento's plan explanation cites illustrative %/R$ examples that
+    have nothing to do with the user's real data ("sem exigir transações
+    pré-existentes") — found live against the real DeepSeek API, where a
+    "quero montar um plano de gastos" answer walking through an example income
+    of R$ 5.000 was wrongly rejected before this intent scoping existed.
+    """
+    balance = _balance(balance="0")
+    summary = _summary(categories=[], total_income="0")
+    get_balance, get_budget_summary = _fakes(balance, summary)
+
+    response = AgentResponse(
+        text=(
+            "Custos Fixos (30-40% da renda mensal). Por exemplo, se sua renda for "
+            "R$ 5.000, você pode reservar 35% (R$ 1.750) para Custos Fixos."
+        )
+    )
+    result = validate(
+        response,
+        user_id="u1",
+        intent="explain_budget",
+        get_balance=get_balance,
+        get_budget_summary=get_budget_summary,
+    )
+
+    assert result.approved is True
+
+
+def test_validate_rejects_wrong_balance_even_when_intent_is_none():
+    """Without a known intent (e.g. a raw dict/plain call), the check still runs —
+    only the explicitly-safe intents (explain_budget) are exempted."""
+    balance = _balance(balance="2000.00")
+    summary = _summary(categories=[])
+    get_balance, get_budget_summary = _fakes(balance, summary)
+
+    response = AgentResponse(text="Seu saldo atual é de R$ 9999.00.")
+    result = validate(response, user_id="u1", get_balance=get_balance, get_budget_summary=get_budget_summary)
+
+    assert result.approved is False
 
 
 # --- Check 3: categoria válida ------------------------------------------------
