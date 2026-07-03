@@ -140,7 +140,7 @@
 - **Verify**: `tests/integration/test_mcp.py::test_finance_create_transaction`
 - **Commit**: `feat: add finance-mcp server`
 
-### T17: chroma-mcp server
+### T17: chroma-mcp server ✅ done
 - **Requirement**: MCP-01, VEC-02, VEC-03, VEC-05
 - **Action**: MCP server for `search_transactions`, `find_similar_transactions`, `query_knowledge`, `get_chat_context`, `save_working_memory`; fallback to `TransactionRepository.search_by_description` when ChromaDB down
 - **Verify**: `tests/integration/test_mcp.py::test_chroma_search_isolation`, `test_chroma_fallback_sqlite_like`
