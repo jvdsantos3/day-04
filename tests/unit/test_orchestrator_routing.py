@@ -36,8 +36,13 @@ class _FakeChatModel:
     def __init__(self, classification: IntentClassification) -> None:
         self._classification = classification
 
-    def with_structured_output(self, schema):
+    def with_structured_output(self, schema, method=None):
         assert schema is IntentClassification
+        # DeepSeek rejects the json_schema-based response_format that
+        # with_structured_output defaults to for unrecognized models —
+        # classify_intent must pin method="function_calling" (confirmed
+        # against the real API).
+        assert method == "function_calling"
         return _FakeStructuredModel(self._classification)
 
 

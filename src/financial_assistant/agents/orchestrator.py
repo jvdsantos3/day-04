@@ -45,6 +45,12 @@ SYSTEM_PROMPT = (
     '- "qual categoria", "se encaixa" -> categorize\n'
     '- "economizar", "prestar atenção", "orçamento" -> budget_advice\n'
     '- "gastei", "recebi" -> register_transaction\n'
+    "IMPORTANTE: se a mensagem for uma PERGUNTA pedindo a categoria de um "
+    "gasto (contém \"?\" junto com \"qual categoria\"/\"se encaixa\"), "
+    "classifique como categorize mesmo que também mencione um verbo como "
+    '"gastei" e um valor — o usuário está pedindo uma opinião, não mandando '
+    "registrar. Só use register_transaction quando a mensagem for uma "
+    "afirmação (sem pedir a categoria).\n"
     "Responda somente com a intenção classificada e o nível de confiança "
     "(0 a 1)."
 )
@@ -66,9 +72,18 @@ def get_orchestrator_llm() -> BaseChatModel:
 def classify_intent(
     message: str, llm: BaseChatModel | None = None
 ) -> IntentClassification:
-    """Classify ``message`` into an :class:`IntentClassification` via structured output."""
+    """Classify ``message`` into an :class:`IntentClassification` via structured output.
+
+    ``method="function_calling"`` is required: DeepSeek's API rejects the
+    ``json_schema``-based ``response_format`` that ``with_structured_output``
+    otherwise defaults to for models it doesn't recognize (400 "This
+    response_format type is unavailable now"), confirmed against the real
+    API — tool-calling-based structured output works fine.
+    """
     model = llm if llm is not None else get_orchestrator_llm()
-    structured_model = model.with_structured_output(IntentClassification)
+    structured_model = model.with_structured_output(
+        IntentClassification, method="function_calling"
+    )
     return structured_model.invoke([("system", SYSTEM_PROMPT), ("human", message)])
 
 
