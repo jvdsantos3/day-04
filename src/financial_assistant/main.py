@@ -8,6 +8,7 @@ their tasks land (auth first, then web/chat). Tests build their own app via
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -18,10 +19,22 @@ from financial_assistant.web.router import router as web_router
 
 _STATIC_DIR = Path(__file__).resolve().parent / "web" / "static"
 
+# The Vite dev server origin the React SPA is served from in development
+# (CORS-01). Cross-origin requests must carry the session cookie, so
+# credentials are allowed for this exact origin.
+_FRONTEND_DEV_ORIGIN = "http://localhost:5173"
+
 
 def create_app() -> FastAPI:
     """Build and return the FastAPI application."""
     app = FastAPI(title="Assistente Financeiro")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[_FRONTEND_DEV_ORIGIN],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
     @app.get("/", include_in_schema=False)
     async def root() -> RedirectResponse:

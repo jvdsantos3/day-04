@@ -190,7 +190,7 @@ O assistente financeiro entrega todas as telas via Jinja2 + HTMX servidas pelo F
 | UI-SHELL-01 | P1: Shell | Design | Pending |
 | UI-SHELL-02 | P1: Shell | Design | Pending |
 | DEPLOY-01 | P1: Shell | Design | Pending |
-| CORS-01 | P1: Dev | Design | Pending |
+| CORS-01 | P1: Dev | Design | Done (T5) |
 | UI-A11Y-01 | P2: A11y | - | Pending |
 | UI-A11Y-02 | P2: A11y | - | Pending |
 | UI-FMT-01 | P2: Format | - | Pending |

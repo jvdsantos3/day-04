@@ -108,7 +108,7 @@
 
 ---
 
-### T5 — CORS + mount API router (CORS-01)
+### T5 — CORS + mount API router (CORS-01) — DONE (5db7d0c)
 
 **Scope:** `main.py`, `api/router.py`
 
