@@ -44,3 +44,33 @@ class UserEnvelope(BaseModel):
     """``{"user": {...}}`` — register/login success bodies (AUTH-API-01/02)."""
 
     user: UserOut
+
+
+class CategoryBudgetOut(BaseModel):
+    """One budget category's status for the month (API-DASH-01)."""
+
+    category: str
+    label: str
+    spent: Decimal
+    pct: float
+    min_pct: float
+    max_pct: float
+    status: str
+
+    @field_serializer("spent")
+    def _serialize_spent(self, value: Decimal) -> str:
+        return str(value)
+
+
+class DashboardSummaryOut(BaseModel):
+    """``GET /api/dashboard/summary`` response body (API-DASH-01)."""
+
+    month: str
+    total_income: Decimal
+    total_expense: Decimal
+    warning: str | None
+    categories: list[CategoryBudgetOut]
+
+    @field_serializer("total_income", "total_expense")
+    def _serialize_money(self, value: Decimal) -> str:
+        return str(value)

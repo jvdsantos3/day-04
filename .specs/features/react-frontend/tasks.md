@@ -82,7 +82,7 @@
 
 ---
 
-### T3 — GET /api/dashboard/summary (API-DASH-01)
+### T3 — GET /api/dashboard/summary (API-DASH-01) — DONE (c99e45c)
 
 **Scope:** `api/dashboard_router.py`
 
