@@ -252,7 +252,7 @@
 
 ## Phase 6: Integration & Cleanup
 
-### T17 — FastAPI static mount + SPA fallback (DEPLOY-01)
+### T17 — FastAPI static mount + SPA fallback (DEPLOY-01) — DONE (pending-hash)
 
 **Scope:** `main.py`
 
