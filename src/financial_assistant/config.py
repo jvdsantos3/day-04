@@ -19,6 +19,8 @@ class Settings(BaseSettings):
 
     # Vector persistence (ChromaDB semantic index)
     chroma_path: str = "./data/chroma"
+    # Minimum cosine similarity for chroma-mcp.search_transactions hits (VEC-02)
+    chroma_similarity_threshold: float = 0.5
 
     # Auth — JWT session cookie (HS256)
     jwt_secret: str = "change-me-in-production"
