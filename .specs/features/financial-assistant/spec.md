@@ -672,24 +672,24 @@ Fixture de teste para cenário 3: receita R$ 5.000 + despesas desbalanceadas (Cu
 | TBL-01         | P1: Tabela             | T27    | Done    |
 | TBL-02         | P1: Tabela             | T27    | Done    |
 | TBL-03         | P1: Tabela             | T28    | Done    |
-| BUD-01         | P1: Orçamento          | T4, T10 | Partial |
-| BUD-02         | P1: Orçamento          | T10    | Partial |
-| BUD-03         | P1: Orçamento          | T10    | Partial |
+| BUD-01         | P1: Orçamento          | T4, T10 | Done |
+| BUD-02         | P1: Orçamento          | T10    | Done |
+| BUD-03         | P1: Orçamento          | T10, T23, fix (AC3 unconditional summary) | Done |
 | ORCH-01        | P1: Orquestração       | T19, T20, T25 | Done |
-| ORCH-02        | P1: Orquestração       | T20    | Partial |
+| ORCH-02        | P1: Orquestração       | T20, fix (intent_confidence wired to routing edge) | Done |
 | VAL-01         | P1: Validação          | T11, T24 | Done  |
 | VAL-02         | P1: Validação          | T11, T24 | Done  |
 | VAL-03         | P1: Validação          | T24    | Done    |
-| INS-01         | P2: Insights           | -      | Pending |
-| VEC-01         | P1: ChromaDB           | T12, T14 | Partial |
-| VEC-02         | P1: ChromaDB           | Design | Pending |
-| VEC-03         | P1: ChromaDB           | Design | Pending |
-| VEC-04         | P1: ChromaDB           | T14    | Partial |
-| VEC-05         | P1: ChromaDB           | Design | Pending |
-| MCP-01         | P1: MCPs               | Design | Pending |
-| MCP-02         | P1: MCPs               | Design | Pending |
-| MCP-03         | P1: MCPs               | Design | Pending |
-| MCP-04         | P1: MCPs               | Design | Pending |
+| INS-01         | P2: Insights           | -      | Pending (out of scope) |
+| VEC-01         | P1: ChromaDB           | T12, T14 | Done |
+| VEC-02         | P1: ChromaDB           | T17    | Done (⚠️ threshold value is a spec-precision gap) |
+| VEC-03         | P1: ChromaDB           | T21, fix (source citation in metadata) | Done |
+| VEC-04         | P1: ChromaDB           | T14    | Done |
+| VEC-05         | P1: ChromaDB           | T17    | Done |
+| MCP-01         | P1: MCPs               | T18, fix (connect at graph build time) | Done |
+| MCP-02         | P1: MCPs               | T16    | Done |
+| MCP-03         | P1: MCPs               | T18, fix (fallback now reachable) | Done |
+| MCP-04         | P1: MCPs               | T16    | Done |
 | AUTH-01        | P1: Auth               | T5, T6 | Done    |
 | AUTH-02        | P1: Auth               | T6     | Done    |
 | AUTH-03        | P1: Auth               | T7     | Done    |
