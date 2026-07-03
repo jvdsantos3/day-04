@@ -156,7 +156,7 @@
 
 ## Phase 6 — Agents
 
-### T19: AgentState + graph skeleton
+### T19: AgentState + graph skeleton ✅ done
 - **Requirement**: ORCH-01
 - **Action**: StateGraph with nodes: orchestrator, validator; edges defined
 - **Verify**: graph compiles without error
