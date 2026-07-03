@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "promote_threshold": 2,
+  "window_days": 45,
+  "quarantine_threshold": 2,
+  "next_id": 6,
+  "lessons": [
+    {
+      "id": "L-001",
+      "key": "ac_gap::when a spec ac asks for an unconditional summary e g how is my budget doing alongside a conditional filtered variant e g what needs attention implement both as distinct handlers don t assume the filtered one satisfies the unconditional one",
+      "text": "When a spec AC asks for an unconditional summary (e.g. 'how is my budget doing') alongside a conditional/filtered variant (e.g. 'what needs attention'), implement both as distinct handlers — don't assume the filtered one satisfies the unconditional one.",
+      "signal": "ac_gap",
+      "scope": "",
+      "status": "candidate",
+      "features": [
+        "financial-assistant"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "BUD-03 AC3"
+      ],
+      "created": "2026-07-03T01:52:13Z",
+      "last_seen": "2026-07-03T01:52:13Z"
+    },
+    {
+      "id": "L-002",
+      "key": "ac_gap::a routing threshold function being unit tested in isolation does not mean it s reachable verify the graph router edge actually passes the field e g confidence the function needs not just that the function behaves correctly when called directly",
+      "text": "A routing/threshold function being unit-tested in isolation does not mean it's reachable — verify the graph/router edge actually passes the field (e.g. confidence) the function needs, not just that the function behaves correctly when called directly.",
+      "signal": "ac_gap",
+      "scope": "",
+      "status": "candidate",
+      "features": [
+        "financial-assistant"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "ORCH-02 / src/financial_assistant/agents/graph.py:54-56"
+      ],
+      "created": "2026-07-03T01:52:13Z",
+      "last_seen": "2026-07-03T01:52:13Z"
+    },
+    {
+      "id": "L-003",
+      "key": "ac_gap::when a spec ac requires citing a source collection doc in a user facing reply test the final response text metadata for that citation testing only that retrieval happened is not sufficient evidence",
+      "text": "When a spec AC requires citing a source (collection+doc) in a user-facing reply, test the final response text/metadata for that citation — testing only that retrieval happened is not sufficient evidence.",
+      "signal": "ac_gap",
+      "scope": "",
+      "status": "candidate",
+      "features": [
+        "financial-assistant"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "VEC-03 / src/financial_assistant/agents/specialists/atendimento.py:58-72"
+      ],
+      "created": "2026-07-03T01:52:13Z",
+      "last_seen": "2026-07-03T01:52:13Z"
+    },
+    {
+      "id": "L-004",
+      "key": "ac_gap::a fallback adapter function being fully unit tested does not prove it s wired into the real startup path grep for its call sites in application code not just tests before marking the ac done",
+      "text": "A fallback/adapter function being fully unit-tested does not prove it's wired into the real startup path — grep for its call sites in application code (not just tests) before marking the AC done.",
+      "signal": "ac_gap",
+      "scope": "",
+      "status": "candidate",
+      "features": [
+        "financial-assistant"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "MCP-01 / src/financial_assistant/mcp/client.py"
+      ],
+      "created": "2026-07-03T01:52:13Z",
+      "last_seen": "2026-07-03T01:52:13Z"
+    },
+    {
+      "id": "L-005",
+      "key": "spec_precision_gap::when an edge case specifies preserving state across a redirect e g return url assert the actual query param header in the test not just the redirect target path",
+      "text": "When an edge case specifies preserving state across a redirect (e.g. return URL), assert the actual query param/header in the test, not just the redirect target path.",
+      "signal": "spec_precision_gap",
+      "scope": "",
+      "status": "candidate",
+      "features": [
+        "financial-assistant"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "AUTH-05 next= param"
+      ],
+      "created": "2026-07-03T01:52:13Z",
+      "last_seen": "2026-07-03T01:52:13Z"
+    }
+  ]
+}
