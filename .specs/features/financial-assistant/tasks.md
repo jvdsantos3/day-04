@@ -180,7 +180,7 @@
 - **Verify**: `test_categorize_delivery_is_prazeres`
 - **Commit**: `feat: add transacoes specialist`
 
-### T23: Specialist — Orçamento
+### T23: Specialist — Orçamento ✅ done (`53146fe`)
 - **Requirement**: BUD-03, CONV-03, CONV-04
 - **Action**: get_budget_summary tool; prioritized advice; orientar registro de receita quando base = zero
 - **Verify**: `test_budget_advice_over_budget_categories`
