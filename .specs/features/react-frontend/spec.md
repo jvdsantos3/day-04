@@ -189,7 +189,7 @@ O assistente financeiro entrega todas as telas via Jinja2 + HTMX servidas pelo F
 | UI-CHAT-03 | P1: Chat | Design | Done (T15/2964185) |
 | UI-SHELL-01 | P1: Shell | Design | Done (T8; guard/header dinâmico completados em 2271cff) |
 | UI-SHELL-02 | P1: Shell | Design | Done (T8; guard/header dinâmico completados em 2271cff) |
-| DEPLOY-01 | P1: Shell | Design | Done (T17/4c7a24b) |
+| DEPLOY-01 | P1: Shell | Design | Done (T17/4c7a24b, T18/88bcbd2) |
 | CORS-01 | P1: Dev | Design | Done (T5) |
 | UI-A11Y-01 | P2: A11y | - | Pending |
 | UI-A11Y-02 | P2: A11y | - | Pending |

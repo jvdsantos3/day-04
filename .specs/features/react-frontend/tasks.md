@@ -265,7 +265,7 @@
 
 ---
 
-### T18 — Remove Jinja2 HTML routes — DONE (pending-hash)
+### T18 — Remove Jinja2 HTML routes — DONE (88bcbd2)
 
 **Scope:** Remover templates e rotas HTML de `auth/router.py`, `web/router.py`, `chat/router.py` GET `/chat`
 
