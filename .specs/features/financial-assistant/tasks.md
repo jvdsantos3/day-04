@@ -134,7 +134,7 @@
 
 ## Phase 5 — MCP Servers
 
-### T16: finance-mcp server
+### T16: finance-mcp server ✅ done
 - **Requirement**: MCP-01, MCP-02, MCP-04
 - **Action**: MCP server exposing transaction + budget tools with user_id param
 - **Verify**: `tests/integration/test_mcp.py::test_finance_create_transaction`
