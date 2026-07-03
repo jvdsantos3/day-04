@@ -3,14 +3,21 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import Login from "./Login";
+import { AuthProvider } from "@/hooks/useAuth";
 
+// Login agora depende de useAuth() (Fix UI-AUTH-01: setUser antes de
+// navigate), então precisa de um AuthProvider real na árvore. O GET
+// /api/auth/me do mount do AuthProvider é mockado com 401 (visitante) em
+// todos os testes deste arquivo, consumindo a 1ª chamada de fetch.
 function renderLogin() {
   return render(
     <MemoryRouter initialEntries={["/login"]}>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<div>Dashboard Page</div>} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={<div>Dashboard Page</div>} />
+        </Routes>
+      </AuthProvider>
     </MemoryRouter>,
   );
 }
@@ -18,6 +25,13 @@ function renderLogin() {
 describe("Login", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
+    // Consome o GET /api/auth/me do mount do AuthProvider (visitante, 401)
+    // antes de cada teste configurar seu próprio mock para o POST de login.
+    (fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({ detail: "Não autenticado" }),
+    });
   });
 
   afterEach(() => {

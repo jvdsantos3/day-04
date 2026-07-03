@@ -3,14 +3,21 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import Register from "./Register";
+import { AuthProvider } from "@/hooks/useAuth";
 
+// Register agora depende de useAuth() (Fix UI-AUTH-02: setUser antes de
+// navigate), então precisa de um AuthProvider real na árvore. O GET
+// /api/auth/me do mount do AuthProvider é mockado com 401 (visitante) em
+// todos os testes deste arquivo, consumindo a 1ª chamada de fetch.
 function renderRegister() {
   return render(
     <MemoryRouter initialEntries={["/register"]}>
-      <Routes>
-        <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<div>Dashboard Page</div>} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/register" element={<Register />} />
+          <Route path="/dashboard" element={<div>Dashboard Page</div>} />
+        </Routes>
+      </AuthProvider>
     </MemoryRouter>,
   );
 }
@@ -18,6 +25,13 @@ function renderRegister() {
 describe("Register", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
+    // Consome o GET /api/auth/me do mount do AuthProvider (visitante, 401)
+    // antes de cada teste configurar seu próprio mock para o POST de registro.
+    (fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({ detail: "Não autenticado" }),
+    });
   });
 
   afterEach(() => {
@@ -44,7 +58,14 @@ describe("Register", () => {
     expect(
       await screen.findByText("A senha deve ter no mínimo 8 caracteres"),
     ).toBeInTheDocument();
-    expect(fetch).not.toHaveBeenCalled();
+    // A validação client-side de senha curta não deve chamar a API de
+    // registro (a única chamada de fetch registrada é o GET /api/auth/me
+    // do mount do AuthProvider, mockado em beforeEach).
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).not.toHaveBeenCalledWith(
+      expect.stringContaining("/auth/register"),
+      expect.anything(),
+    );
   });
 
   it("submit válido navega para /dashboard", async () => {

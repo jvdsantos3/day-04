@@ -12,6 +12,7 @@ import type { User } from "@/types/api";
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
+  setUser: (user: User) => void;
   logout: () => Promise<void>;
 }
 
@@ -63,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout }}>
+    <AuthContext.Provider value={{ user, loading, setUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

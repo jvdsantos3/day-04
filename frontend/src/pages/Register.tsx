@@ -1,11 +1,14 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import type { User } from "@/types/api";
 
 const MIN_PASSWORD_LENGTH = 8;
 
 export default function Register() {
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,6 +42,11 @@ export default function Register() {
         return;
       }
 
+      // Popula o AuthProvider com o usuário já retornado no corpo do
+      // register ANTES de navegar — ver mesma correção/motivo em Login.tsx
+      // (UI-AUTH-02).
+      const body = (await response.json()) as { user: User };
+      setUser(body.user);
       navigate("/dashboard");
     } catch {
       setError("Ocorreu um erro. Tente novamente.");

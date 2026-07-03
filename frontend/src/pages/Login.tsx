@@ -1,9 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import type { User } from "@/types/api";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +33,11 @@ export default function Login() {
         return;
       }
 
+      // Popula o AuthProvider com o usuário já retornado no corpo do login
+      // ANTES de navegar — ProtectedRoute lê esse mesmo contexto, e sem isso
+      // o redirect ocorre com o `user=null` do fetch de mount (UI-AUTH-01).
+      const body = (await response.json()) as { user: User };
+      setUser(body.user);
       navigate("/dashboard");
     } catch {
       setError("Ocorreu um erro. Tente novamente.");
