@@ -11,7 +11,7 @@ This feature has more than 3 phases. Before Execute, offer one worker per phase,
 ---
 
 **Design**: `.specs/features/agent-architecture-hardening/design.md`  
-**Status**: Draft
+**Status**: In Progress
 
 ---
 
@@ -111,6 +111,7 @@ T12 ──→ T13 ──→ T14
 
 ### T1: Add Streaming Event Contracts
 
+**Status**: Done (`ba78274`)
 **What**: Define typed stream event contracts and SSE formatting helpers.  
 **Where**: `src/financial_assistant/contracts/streaming.py`, `tests/unit/test_streaming_contracts.py`  
 **Depends on**: None  
@@ -137,6 +138,7 @@ T12 ──→ T13 ──→ T14
 
 ### T2: Add SQLite Checkpointing Support
 
+**Status**: Done (`c27074f`)
 **What**: Add checkpoint dependency/config/factory with testable `thread_id` config.  
 **Where**: `pyproject.toml`, `src/financial_assistant/config.py`, `src/financial_assistant/agents/checkpointing.py`, `tests/unit/test_checkpointing.py`  
 **Depends on**: None  
@@ -163,6 +165,7 @@ T12 ──→ T13 ──→ T14
 
 ### T3: Extend MCP Client With ToolBundle
 
+**Status**: Done (`c38575e`)
 **What**: Preserve fallback tools while exposing primary MCP tool map for providers.  
 **Where**: `src/financial_assistant/mcp/client.py`, `tests/integration/test_mcp.py`  
 **Depends on**: None  
