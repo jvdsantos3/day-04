@@ -677,9 +677,9 @@ Fixture de teste para cenário 3: receita R$ 5.000 + despesas desbalanceadas (Cu
 | BUD-03         | P1: Orçamento          | T10    | Partial |
 | ORCH-01        | P1: Orquestração       | Design | Pending |
 | ORCH-02        | P1: Orquestração       | Design | Pending |
-| VAL-01         | P1: Validação          | T11    | Partial |
-| VAL-02         | P1: Validação          | T11    | Partial |
-| VAL-03         | P1: Validação          | Design | Pending |
+| VAL-01         | P1: Validação          | T11, T24 | Done  |
+| VAL-02         | P1: Validação          | T11, T24 | Done  |
+| VAL-03         | P1: Validação          | T24    | Done    |
 | INS-01         | P2: Insights           | -      | Pending |
 | VEC-01         | P1: ChromaDB           | T12, T14 | Partial |
 | VEC-02         | P1: ChromaDB           | Design | Pending |
@@ -705,7 +705,7 @@ Fixture de teste para cenário 3: receita R$ 5.000 + despesas desbalanceadas (Cu
 | CONV-02        | P1: Conversação        | T22    | Partial |
 | CONV-03        | P1: Conversação        | T10    | Partial |
 | CONV-04        | P1: Conversação        | Design | Pending |
-| CONV-05        | P1: Conversação        | Design | Pending |
+| CONV-05        | P1: Conversação        | T24    | Done    |
 
 
 **Coverage:** 40 total — mapeados em `tasks.md` (T3–T32)

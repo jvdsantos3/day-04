@@ -186,7 +186,7 @@
 - **Verify**: `test_budget_advice_over_budget_categories`
 - **Commit**: `feat: add orcamento specialist`
 
-### T24: Validator node
+### T24: Validator node ✅ done
 - **Requirement**: VAL-01, VAL-02, VAL-03, CONV-05
 - **Action**: Pydantic check + factual balance verification + retry loop
 - **Verify**: `tests/unit/test_validator.py` — rejects wrong balance
