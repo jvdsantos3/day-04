@@ -7,6 +7,16 @@ outer boundaries mocked (LLM calls, MCP data-fetching functions), same
 spirit as ``test_graph_smoke.py`` (T25) and the specialists' own unit tests
 (T21-23). Assertions target the exact content spec.md's ACs demand, not
 just "some response came back".
+
+``@pytest.mark.llm`` tests hit the real DeepSeek API (opt-in, `-m llm`,
+deselected from the default `-m "unit or integration"` gate) — these exist
+because the mocked-LLM tests above can't catch a *classification* mistake by
+the real model. One is included here on purpose: CONV-02's exact prompt
+contains both a ``register_transaction`` marker ("gastei") and a
+``categorize`` marker ("qual categoria"/"se encaixa"), and the real DeepSeek
+model picked the wrong one before ``orchestrator.SYSTEM_PROMPT`` was fixed
+(see `.specs/STATE.md`'s "Validação ao vivo pós-T29" note) — this test locks
+that fix in as a regression guard.
 """
 
 from __future__ import annotations
@@ -19,7 +29,7 @@ from sqlalchemy.pool import StaticPool
 
 from financial_assistant.agents import graph as graph_module
 from financial_assistant.agents import orchestrator
-from financial_assistant.agents.specialists import atendimento
+from financial_assistant.agents.specialists import atendimento, transacoes
 from financial_assistant.contracts.agent_response import Intent, IntentClassification
 from financial_assistant.db.session import Base
 from financial_assistant.domain.budget_defaults import seed_budget_targets
@@ -92,3 +102,44 @@ def test_plano_de_gastos_explains_five_categories(graph, monkeypatch):
     for name in CATEGORY_NAMES:
         assert name in response.text
     assert "30-40%" in response.text  # Custos Fixos range — AC1's "faixas percentuais"
+
+
+# --- T31: delivery categorization, no auto-register (CONV-02) ----------------
+
+_DELIVERY_MESSAGE = (
+    "Gastei 20 reais num pedido de delivery, em qual categoria essa despesa se encaixa?"
+)
+
+
+@pytest.mark.integration
+def test_delivery_categorization_prazeres(graph, monkeypatch):
+    user_id = graph
+    _mock_classify_intent(monkeypatch, Intent.CATEGORIZE)
+    create_calls = []
+    monkeypatch.setattr(
+        transacoes,
+        "_find_similar_transactions",
+        lambda **kwargs: [{"metadata": {"category": "prazeres"}, "score": 0.91}],
+    )
+    monkeypatch.setattr(
+        transacoes, "_create_transaction", lambda **kwargs: create_calls.append(kwargs)
+    )
+
+    response = graph_module.run(user_id, "sess-delivery", _DELIVERY_MESSAGE)
+
+    assert response.suggested_category == "prazeres"
+    assert response.action == "offer_register"
+    assert not create_calls  # CONV-02: never persists without confirmation
+
+
+@pytest.mark.llm
+def test_delivery_categorization_prazeres_real_deepseek(graph):
+    """Regression guard: the real model must classify this as categorize, not
+    register_transaction, despite the message containing both markers ("gastei"
+    and "qual categoria"/"se encaixa") — see module docstring."""
+    user_id = graph
+
+    response = graph_module.run(user_id, "sess-delivery-llm", _DELIVERY_MESSAGE)
+
+    assert response.suggested_category == "prazeres"
+    assert response.action == "offer_register"
