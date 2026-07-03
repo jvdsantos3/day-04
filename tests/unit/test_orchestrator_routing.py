@@ -13,6 +13,7 @@ from langchain_core.messages import HumanMessage
 
 from financial_assistant.agents.orchestrator import (
     AMBIGUITY_CONFIDENCE_THRESHOLD,
+    SYSTEM_PROMPT,
     classify_intent,
     orchestrator_node,
     specialist_for_intent,
@@ -98,6 +99,15 @@ def test_low_confidence_intent_routes_to_atendimento_for_clarification():
     specialist = specialist_for_intent(Intent.REGISTER_TRANSACTION, ambiguous_confidence)
 
     assert specialist == "atendimento"
+
+
+def test_system_prompt_mentions_imperative_registration_examples():
+    lowered_prompt = SYSTEM_PROMPT.lower()
+
+    assert "registre" in lowered_prompt
+    assert "adicione" in lowered_prompt
+    assert "despesa" in lowered_prompt
+    assert "receita" in lowered_prompt
 
 
 def test_orchestrator_node_sets_intent_on_state(monkeypatch):

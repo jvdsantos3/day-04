@@ -7,7 +7,8 @@ per design.md's routing table (Onda 15 / T20):
 - "plano de gastos", "como organizar" -> ``explain_budget`` -> Atendimento
 - "qual categoria", "se encaixa" -> ``categorize`` -> Transações
 - "economizar", "prestar atenção", "orçamento" -> ``budget_advice`` -> Orçamento
-- "gastei", "recebi" -> ``register_transaction`` -> Transações
+- "gastei", "recebi", "registre/adicionar receita ou despesa" ->
+  ``register_transaction`` -> Transações
 
 MVP routing rule (ORCH-01): one specialist per turn — this module only
 classifies and maps; specialist dispatch nodes and the validator retry loop
@@ -44,7 +45,8 @@ SYSTEM_PROMPT = (
     '- "plano de gastos", "como organizar" -> explain_budget\n'
     '- "qual categoria", "se encaixa" -> categorize\n'
     '- "economizar", "prestar atenção", "orçamento" -> budget_advice\n'
-    '- "gastei", "recebi" -> register_transaction\n'
+    '- "gastei", "recebi", "registre", "adicione", "adicionar", '
+    '"receita", "despesa" -> register_transaction\n'
     "IMPORTANTE: se a mensagem for uma PERGUNTA pedindo a categoria de um "
     "gasto (contém \"?\" junto com \"qual categoria\"/\"se encaixa\"), "
     "classifique como categorize mesmo que também mencione um verbo como "

@@ -200,6 +200,29 @@ def test_validate_approves_just_registered_transaction_amount():
     assert result.approved is True
 
 
+def test_validate_registered_transaction_without_fetching_budget_data():
+    """Registration confirmations already carry the persisted transaction; avoid
+    making this happy path depend on budget-summary availability."""
+    response = AgentResponse(
+        text='Registrei uma receita de R$ 5000: "salário".',
+        action="registered",
+        metadata={"transaction": {"amount": "5000"}},
+    )
+
+    def _must_not_fetch(**kwargs):
+        raise AssertionError("registered transaction confirmations should not fetch aggregates")
+
+    result = validate(
+        response,
+        user_id="u1",
+        intent="register_transaction",
+        get_balance=_must_not_fetch,
+        get_budget_summary=_must_not_fetch,
+    )
+
+    assert result.approved is True
+
+
 def test_validate_skips_financial_check_for_explain_budget_illustrative_figures():
     """CONV-01: Atendimento's plan explanation cites illustrative %/R$ examples that
     have nothing to do with the user's real data ("sem exigir transações

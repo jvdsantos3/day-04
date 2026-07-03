@@ -133,6 +133,11 @@ def _known_amounts(balance: dict, summary: dict, response: AgentResponse) -> set
     return values
 
 
+def _is_registered_transaction_confirmation(response: AgentResponse) -> bool:
+    transaction = response.metadata.get("transaction") if isinstance(response.metadata, dict) else None
+    return response.action == "registered" and isinstance(transaction, dict) and "amount" in transaction
+
+
 def _known_percents(summary: dict) -> set[float]:
     values: set[float] = set()
     for category in summary["categories"]:
@@ -173,6 +178,9 @@ def validate(
             BudgetCategory(checked.suggested_category)
         except ValueError:
             return ValidationResult(False, f"categoria inválida: {checked.suggested_category!r}")
+
+    if _is_registered_transaction_confirmation(checked):
+        return ValidationResult(True, None)
 
     if intent in _SKIPS_FINANCIAL_FIGURE_CHECK_FOR:
         return ValidationResult(True, None)

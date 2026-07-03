@@ -19,9 +19,12 @@ exemplos rotulados globais (``category_examples``, T15 — inclui
 
 Spec-precision gap: a extração de tipo/valor/descrição da mensagem em
 linguagem natural não é definida no design — implementada via regex
-determinístico (marcadores "gastei/paguei/comprei" -> despesa,
-"recebi/ganhei" -> receita; valor via padrão ``R$ N`` ou ``N reais``) em vez
-de LLM, mantendo os testes unitários rápidos e sem mock de chat model.
+determinístico (marcadores "gastei/paguei/comprei" ou menção explícita a
+"despesa" -> despesa, "recebi/ganhei" ou menção explícita a
+"receita/salário" -> receita; mensagens com valor + descrição e sem marcador
+de receita são tratadas como despesa; valor via padrão ``R$ N`` ou
+``N reais``) em vez de LLM, mantendo os testes unitários rápidos e sem mock
+de chat model.
 """
 
 from __future__ import annotations
@@ -50,15 +53,44 @@ _CATEGORY_RATIONALE: dict[BudgetCategory, str] = {
     BudgetCategory.KNOWLEDGE: "é um investimento em desenvolvimento pessoal ou uma meta",
     BudgetCategory.PLEASURES: "é um gasto com lazer, alimentação fora de casa ou entretenimento",
 }
+_CATEGORY_KEYWORD_FALLBACKS: tuple[tuple[BudgetCategory, tuple[str, ...]], ...] = (
+    (
+        BudgetCategory.PLEASURES,
+        (
+            "almoço",
+            "almoco",
+            "jantar",
+            "restaurante",
+            "delivery",
+            "lanche",
+            "cinema",
+            "lazer",
+        ),
+    ),
+)
 
-_EXPENSE_MARKERS = ("gastei", "paguei", "comprei")
-_INCOME_MARKERS = ("recebi", "ganhei")
+_EXPENSE_MARKERS = ("gastei", "paguei", "comprei", "despesa", "gasto")
+_INCOME_MARKERS = ("recebi", "ganhei", "receita", "salário", "salario")
 
 _AMOUNT_PATTERN = re.compile(
-    r"r\$\s*(?P<amt1>\d+(?:[.,]\d{1,2})?)|(?P<amt2>\d+(?:[.,]\d{1,2})?)\s*reais",
+    r"r\$\s*(?P<amt1>\d+(?:[.,]\d{1,2})?)|"
+    r"(?P<amt2>\d+(?:[.,]\d{1,2})?)\s*reais|"
+    r"(?P<amt3>\d+(?:[.,]\d{1,2})?)(?=\s+(?:de|do|da|em|no|na|num|numa|com)\b)",
     re.IGNORECASE,
 )
 _VERB_PREFIX = re.compile(r"^(gastei|paguei|comprei|recebi|ganhei)\b\s*", re.IGNORECASE)
+_REGISTER_PREFIX = re.compile(
+    r"^(registre|registrar|registra|lance|adicione|adicionar|inclua|incluir)\b\s*",
+    re.IGNORECASE,
+)
+_TYPE_PREFIX = re.compile(
+    r"^(?:uma?\s+|um\s+)?(?:despesa|receita|gasto)\b\s*(?:de\b\s*)?",
+    re.IGNORECASE,
+)
+_DESCRIPTION_CONNECTOR_PREFIX = re.compile(
+    r"^(?:com|em|no|na|num|numa|de|do|da)\b\s*",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -83,15 +115,29 @@ def _extract_amount(message: str) -> tuple[Decimal, tuple[int, int]] | None:
     match = _AMOUNT_PATTERN.search(message)
     if match is None:
         return None
-    raw = match.group("amt1") or match.group("amt2")
+    raw = match.group("amt1") or match.group("amt2") or match.group("amt3")
     return Decimal(raw.replace(",", ".")), match.span()
+
+
+def _fallback_description(message: str) -> str:
+    lowered = message.lower()
+    if "salário" in lowered or "salario" in lowered:
+        return "salário"
+    if "receita" in lowered:
+        return "receita"
+    if "despesa" in lowered or "gasto" in lowered:
+        return "despesa"
+    return message.strip()
 
 
 def _clean_description(message: str, span: tuple[int, int]) -> str:
     start, end = span
     remainder = re.sub(r"\s+", " ", message[:start] + message[end:]).strip()
     remainder = _VERB_PREFIX.sub("", remainder).strip(" ,.")
-    return remainder or message.strip()
+    remainder = _REGISTER_PREFIX.sub("", remainder).strip(" ,.")
+    remainder = _TYPE_PREFIX.sub("", remainder).strip(" ,.")
+    remainder = _DESCRIPTION_CONNECTOR_PREFIX.sub("", remainder).strip(" ,.")
+    return remainder or _fallback_description(message)
 
 
 def parse_transaction_message(message: str) -> ParsedTransaction | None:
@@ -100,14 +146,19 @@ def parse_transaction_message(message: str) -> ParsedTransaction | None:
     Returns ``None`` when the type or the amount can't be inferred — callers
     must ask for clarification instead of persisting (CHAT-03).
     """
-    type_ = _infer_type(message)
     extracted = _extract_amount(message)
-    if type_ is None or extracted is None:
+    if extracted is None:
         return None
     amount, span = extracted
     if amount <= 0:
         return None
-    return ParsedTransaction(type=type_, amount=amount, description=_clean_description(message, span))
+    description = _clean_description(message, span)
+    type_ = _infer_type(message)
+    if type_ is None and description != message.strip():
+        type_ = TransactionType.EXPENSE
+    if type_ is None:
+        return None
+    return ParsedTransaction(type=type_, amount=amount, description=description)
 
 
 def categorize(
@@ -128,6 +179,10 @@ def categorize(
         category_value = hit.get("metadata", {}).get("category")
         if category_value:
             return BudgetCategory(category_value)
+    lowered_description = description.lower()
+    for category, keywords in _CATEGORY_KEYWORD_FALLBACKS:
+        if any(keyword in lowered_description for keyword in keywords):
+            return category
     return None
 
 
