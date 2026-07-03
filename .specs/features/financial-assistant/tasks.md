@@ -230,19 +230,19 @@
 
 ## Phase 8 — Integration Tests (Cenários Reais)
 
-### T30: Conversation scenario — plano de gastos
+### T30: Conversation scenario — plano de gastos ✅ done
 - **Requirement**: CONV-01
 - **Action**: `test_plano_de_gastos_explains_five_categories` — mock LLM or `@pytest.mark.llm`
 - **Verify**: response mentions all 5 categories + percentage ranges
 - **Commit**: `test: add plano de gastos conversation scenario`
 
-### T31: Conversation scenario — delivery categorization
+### T31: Conversation scenario — delivery categorization ✅ done
 - **Requirement**: CONV-02
 - **Action**: `test_delivery_categorization_prazeres` — asserts category + offer_register
 - **Verify**: gate passes
 - **Commit**: `test: add delivery categorization scenario`
 
-### T32: Conversation scenario — budget advice
+### T32: Conversation scenario — budget advice ✅ done
 - **Requirement**: CONV-03
 - **Action**: `test_economizar_categories_advice` — seeded unbalanced data
 - **Verify**: response mentions over-budget categories

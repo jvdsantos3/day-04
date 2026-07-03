@@ -701,10 +701,10 @@ Fixture de teste para cenário 3: receita R$ 5.000 + despesas desbalanceadas (Cu
 | WEB-03         | P1: Dashboard          | T27    | Done    |
 | WEB-04         | P1: Dashboard          | T28    | Done    |
 | WEB-05         | P1: Dashboard          | T29    | Done    |
-| CONV-01        | P1: Conversação        | T21    | Partial |
-| CONV-02        | P1: Conversação        | T22    | Partial |
-| CONV-03        | P1: Conversação        | T10    | Partial |
-| CONV-04        | P1: Conversação        | Design | Pending |
+| CONV-01        | P1: Conversação        | T21, T30 | Done  |
+| CONV-02        | P1: Conversação        | T22, T31 | Done  |
+| CONV-03        | P1: Conversação        | T10, T32 | Done  |
+| CONV-04        | P1: Conversação        | T23    | Done    |
 | CONV-05        | P1: Conversação        | T24    | Done    |
 
 
