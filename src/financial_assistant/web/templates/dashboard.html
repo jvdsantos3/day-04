@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Assistente Financeiro{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<p class="summary-line">
+  Receita do mês: R$ {{ "%.2f"|format(summary.total_income) }}
+  — Despesas: R$ {{ "%.2f"|format(total_expense) }}
+</p>
+
+{% if summary.warning %}
+<p class="empty-state">
+  {{ summary.warning }} — registre sua receita do mês pelo <a href="/chat">chat</a> para ver os percentuais por categoria.
+</p>
+{% endif %}
+
+<section class="category-cards">
+  {% for category in summary.categories %}
+  <div class="category-card{{ ' alerta' if category.status == 'alerta' else '' }}">
+    <h3>{{ category_labels[category.category] }}</h3>
+    <div class="progress-bar">
+      <div class="progress-bar-fill" style="width: {{ [category.pct, 100] | min }}%"></div>
+    </div>
+    <p>
+      {{ "%.1f"|format(category.pct) }}%
+      <span class="target">
+        (faixa {% if category.max_pct >= 100 %}≥{{ category.min_pct | int }}{% else %}{{ category.min_pct | int }}–{{ category.max_pct | int }}{% endif %}%)
+      </span>
+    </p>
+  </div>
+  {% endfor %}
+</section>
+
+<section class="transactions">
+  <h2>Transações — {{ month }}</h2>
+  {% if transactions %}
+  <table>
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Descrição</th>
+        <th>Tipo</th>
+        <th>Valor</th>
+        <th>Categoria</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for transaction in transactions %}
+      <tr>
+        <td>{{ transaction.date.isoformat() }}</td>
+        <td>{{ transaction.description }}</td>
+        <td>{{ "Receita" if transaction.type.value == "receita" else "Despesa" }}</td>
+        <td>R$ {{ "%.2f"|format(transaction.amount) }}</td>
+        <td>{{ category_labels[transaction.category] if transaction.category else "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty-state">
+    Nenhuma transação registrada em {{ month }} ainda. Comece pelo <a href="/chat">chat</a> contando sua receita do mês.
+  </p>
+  {% endif %}
+</section>
+{% endblock %}

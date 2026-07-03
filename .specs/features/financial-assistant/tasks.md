@@ -202,13 +202,13 @@
 
 ## Phase 7 — Web UI
 
-### T26: Base templates + static CSS
+### T26: Base templates + static CSS ✅ done
 - **Requirement**: WEB-01
 - **Action**: Layout base Jinja2, minimal CSS for dashboard cards
 - **Verify**: template renders in test client
 - **Commit**: `feat: add base web templates`
 
-### T27: Dashboard page
+### T27: Dashboard page ✅ done
 - **Requirement**: WEB-01, WEB-02, WEB-03
 - **Action**: `/dashboard` with transaction table + 5 category bars
 - **Verify**: `tests/integration/test_dashboard.py::test_dashboard_shows_percentages`

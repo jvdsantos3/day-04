@@ -128,3 +128,13 @@ tr:last-child td {
 .error {
   color: var(--color-alert);
 }
+
+.summary-line {
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.empty-state {
+  color: #6b7280;
+  font-style: italic;
+}
