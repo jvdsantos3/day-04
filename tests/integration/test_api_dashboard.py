@@ -167,3 +167,99 @@ def test_summary_defaults_to_current_month(client):
     assert resp.status_code == 200
     # Default month = current month when the query param is omitted.
     assert resp.json()["month"] == current
+
+
+# --- T4: /api/transactions -----------------------------------------------
+
+
+def test_transactions_requires_auth(client):
+    test_client, _ = client
+    resp = test_client.get("/api/transactions")
+    # API-DASH-02: protected — no cookie -> 401.
+    assert resp.status_code == 401
+
+
+def test_transactions_shape_and_serialisation(client):
+    test_client, TestingSession = client
+    _register(test_client)
+    user = _user(TestingSession)
+    _add(
+        TestingSession, user.id,
+        date=date(2026, 7, 15), description="Aluguel",
+        type=TransactionType.EXPENSE, amount=Decimal("-1500.00"),
+        category=BudgetCategory.FIXED,
+    )
+    _add(
+        TestingSession, user.id,
+        date=date(2026, 7, 1), description="Salário",
+        type=TransactionType.INCOME, amount=Decimal("5000.00"), category=None,
+    )
+
+    resp = test_client.get("/api/transactions", params={"month": MONTH})
+
+    assert resp.status_code == 200
+    rows = resp.json()["transactions"]
+    assert len(rows) == 2
+    # Ordered most-recent first: the 15th before the 1st.
+    expense = rows[0]
+    assert expense["date"] == "2026-07-15"
+    assert expense["description"] == "Aluguel"
+    # amount serialised as string, type/category as enum-value strings.
+    assert expense["amount"] == "-1500.00"
+    assert expense["type"] == "despesa"
+    assert expense["category"] == "custos_fixos"
+    assert isinstance(expense["id"], str) and expense["id"]
+    # Income carries a null category.
+    income = rows[1]
+    assert income["type"] == "receita"
+    assert income["category"] is None
+    assert income["amount"] == "5000.00"
+
+
+def test_transactions_filtered_by_category(client):
+    test_client, TestingSession = client
+    _register(test_client)
+    user = _user(TestingSession)
+    _add(
+        TestingSession, user.id,
+        date=date(2026, 7, 2), description="Aluguel",
+        type=TransactionType.EXPENSE, amount=Decimal("1500.00"),
+        category=BudgetCategory.FIXED,
+    )
+    _add(
+        TestingSession, user.id,
+        date=date(2026, 7, 3), description="Cinema",
+        type=TransactionType.EXPENSE, amount=Decimal("50.00"),
+        category=BudgetCategory.PLEASURES,
+    )
+
+    resp = test_client.get(
+        "/api/transactions", params={"month": MONTH, "category": "custos_fixos"}
+    )
+
+    assert resp.status_code == 200
+    rows = resp.json()["transactions"]
+    # Only the matching category is returned.
+    assert [r["description"] for r in rows] == ["Aluguel"]
+    assert rows[0]["category"] == "custos_fixos"
+
+
+def test_transactions_invalid_category_returns_400(client):
+    test_client, _ = client
+    _register(test_client)
+
+    resp = test_client.get("/api/transactions", params={"category": "inexistente"})
+
+    # API-DASH-02: invalid slug -> 400 with the exact spec message.
+    assert resp.status_code == 400
+    assert resp.json() == {"detail": "Categoria inválida"}
+
+
+def test_transactions_empty_when_nothing_matches(client):
+    test_client, _ = client
+    _register(test_client)
+
+    resp = test_client.get("/api/transactions", params={"month": "2020-01"})
+
+    assert resp.status_code == 200
+    assert resp.json() == {"transactions": []}

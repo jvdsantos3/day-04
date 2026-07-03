@@ -7,6 +7,7 @@ strings (e.g. ``"2000.00"``) to avoid float rounding in the client.
 
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
@@ -74,3 +75,32 @@ class DashboardSummaryOut(BaseModel):
     @field_serializer("total_income", "total_expense")
     def _serialize_money(self, value: Decimal) -> str:
         return str(value)
+
+
+class TransactionOut(BaseModel):
+    """One transaction row (API-DASH-02)."""
+
+    id: UUID
+    date: date
+    description: str
+    amount: Decimal
+    type: str
+    category: str | None
+
+    @field_serializer("id")
+    def _serialize_id(self, value: UUID) -> str:
+        return str(value)
+
+    @field_serializer("date")
+    def _serialize_date(self, value: date) -> str:
+        return value.isoformat()
+
+    @field_serializer("amount")
+    def _serialize_amount(self, value: Decimal) -> str:
+        return str(value)
+
+
+class TransactionListOut(BaseModel):
+    """``GET /api/transactions`` response body (API-DASH-02)."""
+
+    transactions: list[TransactionOut]

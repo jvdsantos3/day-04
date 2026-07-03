@@ -18,12 +18,17 @@ from sqlalchemy.orm import Session
 from financial_assistant.api.schemas import (
     CategoryBudgetOut,
     DashboardSummaryOut,
+    TransactionListOut,
+    TransactionOut,
 )
 from financial_assistant.auth.dependencies import get_current_user_api
 from financial_assistant.db.session import get_db
 from financial_assistant.domain.models import User
+from financial_assistant.domain.repositories.transaction_repository import (
+    TransactionRepository,
+)
 from financial_assistant.domain.services.budget_service import BudgetService
-from financial_assistant.web.router import CATEGORY_LABELS
+from financial_assistant.web.router import CATEGORY_LABELS, _parse_category
 
 router = APIRouter()
 
@@ -64,4 +69,34 @@ def dashboard_summary(
         total_expense=total_expense,
         warning=summary.warning,
         categories=categories,
+    )
+
+
+@router.get("/transactions", response_model=TransactionListOut)
+def transactions(
+    month: str | None = None,
+    category: str | None = None,
+    user: User = Depends(get_current_user_api),
+    db: Session = Depends(get_db),
+) -> TransactionListOut:
+    """List the user's transactions, optionally filtered (API-DASH-02).
+
+    An invalid ``category`` slug -> 400 "Categoria inválida" (``_parse_category``).
+    """
+    category_filter = _parse_category(category)
+    rows = TransactionRepository(db).list(
+        user.id, month=month or None, category=category_filter
+    )
+    return TransactionListOut(
+        transactions=[
+            TransactionOut(
+                id=t.id,
+                date=t.date,
+                description=t.description,
+                amount=t.amount,
+                type=t.type.value,
+                category=t.category.value if t.category is not None else None,
+            )
+            for t in rows
+        ]
     )

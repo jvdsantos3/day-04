@@ -95,7 +95,7 @@
 
 ---
 
-### T4 — GET /api/transactions (API-DASH-02)
+### T4 — GET /api/transactions (API-DASH-02) — DONE (a4024ee)
 
 **Scope:** `dashboard_router.py`
 
