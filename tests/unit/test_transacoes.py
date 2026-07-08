@@ -1,9 +1,9 @@
-"""Unit tests for the Transações specialist (T22).
+"""Unit tests for the Transações specialist (T22) — wiring determinístico.
 
-Covers the "Registrar transação via chat" story (CHAT-01/02/03) and the
-delivery-categorization real scenario (CONV-02) from spec.md. finance-mcp's
-``create_transaction`` and chroma-mcp's ``find_similar_transactions`` are
-injected as fakes — no DB, no ChromaDB, no LLM call.
+Testes que dependem da qualidade da extração/categorização via LLM ficam em
+``tests/integration/test_transacoes_llm.py`` (``pytest -m llm``), usando a
+DeepSeek real. Aqui só validamos caminhos que não dependem do modelo:
+Chroma como fonte primária de categoria e persistência condicionada ao intent.
 """
 
 from __future__ import annotations
@@ -11,13 +11,9 @@ from __future__ import annotations
 import pytest
 from langchain_core.messages import HumanMessage
 
-from financial_assistant.agents.specialists.transacoes import (
-    categorize,
-    parse_transaction_message,
-    transacoes_node,
-)
+from financial_assistant.agents.specialists.transacoes import categorize, transacoes_node
 from financial_assistant.contracts.agent_response import Intent
-from financial_assistant.domain.models import BudgetCategory, TransactionType
+from financial_assistant.domain.models import BudgetCategory
 
 pytestmark = pytest.mark.unit
 
@@ -41,10 +37,6 @@ def _find_similar_prazeres(**kwargs):
     return [{"metadata": {"category": "prazeres"}, "score": 0.91, "source": "category_example"}]
 
 
-def _find_similar_empty(**kwargs):
-    return []
-
-
 def _recording_create():
     calls = []
 
@@ -55,14 +47,8 @@ def _recording_create():
     return create, calls
 
 
-def test_categorize_delivery_is_prazeres():
+def test_categorize_delivery_is_prazeres_via_chroma():
     category = categorize("pedido de delivery", user_id="u1", find_similar=_find_similar_prazeres)
-
-    assert category == BudgetCategory.PLEASURES
-
-
-def test_categorize_almoco_falls_back_to_prazeres_without_chroma_hits():
-    category = categorize("almoço", user_id="u1", find_similar=_find_similar_empty)
 
     assert category == BudgetCategory.PLEASURES
 
@@ -80,161 +66,3 @@ def test_delivery_question_offers_register_without_persisting():
     assert response.suggested_category == BudgetCategory.PLEASURES
     assert response.action == "offer_register"
     assert calls == []
-
-
-def test_gastei_cinema_creates_despesa_prazeres():
-    create, calls = _recording_create()
-    state = _state("Gastei R$ 150 no cinema", intent=Intent.REGISTER_TRANSACTION.value)
-
-    result = transacoes_node(state, find_similar=_find_similar_prazeres, create=create)
-
-    response = result["final_response"]
-    assert response.action == "registered"
-    assert response.suggested_category == BudgetCategory.PLEASURES
-    assert len(calls) == 1
-    assert calls[0]["type"] == TransactionType.EXPENSE.value
-    assert calls[0]["amount"] == "150"
-    assert calls[0]["category"] == BudgetCategory.PLEASURES.value
-
-
-def test_registre_despesa_com_almoco_cria_despesa_prazeres():
-    create, calls = _recording_create()
-    state = _state(
-        "Registre uma despesa de R$ 42 com almoço hoje",
-        intent=Intent.REGISTER_TRANSACTION.value,
-    )
-
-    result = transacoes_node(state, find_similar=_find_similar_prazeres, create=create)
-
-    response = result["final_response"]
-    assert response.action == "registered"
-    assert response.suggested_category == BudgetCategory.PLEASURES
-    assert len(calls) == 1
-    assert calls[0]["type"] == TransactionType.EXPENSE.value
-    assert calls[0]["amount"] == "42"
-    assert calls[0]["description"] == "almoço hoje"
-    assert calls[0]["category"] == BudgetCategory.PLEASURES.value
-
-
-def test_valor_com_descricao_curta_cria_despesa_prazeres():
-    create, calls = _recording_create()
-    state = _state("42 reais num almoço", intent=Intent.REGISTER_TRANSACTION.value)
-
-    result = transacoes_node(state, find_similar=_find_similar_prazeres, create=create)
-
-    response = result["final_response"]
-    assert response.action == "registered"
-    assert response.suggested_category == BudgetCategory.PLEASURES
-    assert len(calls) == 1
-    assert calls[0]["type"] == TransactionType.EXPENSE.value
-    assert calls[0]["amount"] == "42"
-    assert calls[0]["description"] == "almoço"
-    assert calls[0]["category"] == BudgetCategory.PLEASURES.value
-
-
-def test_recebi_salario_creates_receita_com_categoria_null():
-    create, calls = _recording_create()
-
-    def _find_similar_must_not_be_called(**kwargs):
-        raise AssertionError("categorização não deve ser chamada para receitas")
-
-    state = _state("Recebi R$ 5000 de salário", intent=Intent.REGISTER_TRANSACTION.value)
-
-    result = transacoes_node(state, find_similar=_find_similar_must_not_be_called, create=create)
-
-    response = result["final_response"]
-    assert response.action == "registered"
-    assert response.suggested_category is None
-    assert len(calls) == 1
-    assert calls[0]["type"] == TransactionType.INCOME.value
-    assert calls[0]["amount"] == "5000"
-    assert calls[0]["category"] is None
-
-
-def test_recebi_valor_de_salario_sem_moeda_cria_receita():
-    create, calls = _recording_create()
-
-    def _find_similar_must_not_be_called(**kwargs):
-        raise AssertionError("categorização não deve ser chamada para receitas")
-
-    state = _state("recebi 5000 de salário", intent=Intent.REGISTER_TRANSACTION.value)
-
-    result = transacoes_node(state, find_similar=_find_similar_must_not_be_called, create=create)
-
-    response = result["final_response"]
-    assert response.action == "registered"
-    assert response.suggested_category is None
-    assert len(calls) == 1
-    assert calls[0]["type"] == TransactionType.INCOME.value
-    assert calls[0]["amount"] == "5000"
-    assert calls[0]["description"] == "salário"
-    assert calls[0]["category"] is None
-
-
-def test_adicione_receita_cria_receita_com_descricao_limpa():
-    create, calls = _recording_create()
-
-    def _find_similar_must_not_be_called(**kwargs):
-        raise AssertionError("categorização não deve ser chamada para receitas")
-
-    state = _state("Adicione uma receita de 5000 reais", intent=Intent.REGISTER_TRANSACTION.value)
-
-    result = transacoes_node(state, find_similar=_find_similar_must_not_be_called, create=create)
-
-    response = result["final_response"]
-    assert response.action == "registered"
-    assert response.suggested_category is None
-    assert len(calls) == 1
-    assert calls[0]["type"] == TransactionType.INCOME.value
-    assert calls[0]["amount"] == "5000"
-    assert calls[0]["description"] == "receita"
-    assert calls[0]["category"] is None
-
-
-def test_gastei_valor_no_almoco_sem_moeda_cria_despesa():
-    create, calls = _recording_create()
-    state = _state("gastei 42 no almoço", intent=Intent.REGISTER_TRANSACTION.value)
-
-    result = transacoes_node(state, find_similar=_find_similar_prazeres, create=create)
-
-    response = result["final_response"]
-    assert response.action == "registered"
-    assert response.suggested_category == BudgetCategory.PLEASURES
-    assert len(calls) == 1
-    assert calls[0]["type"] == TransactionType.EXPENSE.value
-    assert calls[0]["amount"] == "42"
-    assert calls[0]["description"] == "almoço"
-    assert calls[0]["category"] == BudgetCategory.PLEASURES.value
-
-
-def test_clarification_when_amount_cannot_be_inferred():
-    create, calls = _recording_create()
-    state = _state("Gastei um dinheiro no mercado", intent=Intent.REGISTER_TRANSACTION.value)
-
-    result = transacoes_node(state, create=create)
-
-    response = result["final_response"]
-    assert response.action == "none"
-    assert calls == []
-
-
-def test_clarification_when_category_cannot_be_inferred():
-    create, calls = _recording_create()
-    state = _state("Gastei R$ 40 em algo estranho", intent=Intent.REGISTER_TRANSACTION.value)
-
-    result = transacoes_node(state, find_similar=_find_similar_empty, create=create)
-
-    response = result["final_response"]
-    assert response.action == "none"
-    assert calls == []
-
-
-def test_parse_transaction_message_returns_none_without_amount():
-    assert parse_transaction_message("Gastei um dinheiro no mercado") is None
-
-
-def test_parse_transaction_message_extracts_income():
-    parsed = parse_transaction_message("Recebi R$ 5000 de salário")
-
-    assert parsed.type == TransactionType.INCOME
-    assert parsed.amount == 5000

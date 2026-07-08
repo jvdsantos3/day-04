@@ -42,6 +42,7 @@ from typing import Callable
 
 from financial_assistant.agents.state import AgentState
 from financial_assistant.contracts.agent_response import AgentResponse
+from mcp_servers.finance.server import get_balance as _get_balance
 from mcp_servers.finance.server import get_budget_summary as _get_budget_summary
 
 NO_INCOME_ADVICE = (
@@ -58,6 +59,17 @@ NO_ATTENTION_TEXT = (
 TIGHT_MARGIN_PCT = 5.0
 
 _FULL_SUMMARY_MARKERS = re.compile(r"como (está|anda)|resumo", re.IGNORECASE)
+_TOTALS_MARKERS = re.compile(
+    r"quanto\s+(gastei|gastei\s+esse|gastei\s+este|foi|de|eu\s+foi)|"
+    r"total\s+(de\s+)?(gasto|gastos|despesa|despesas)|"
+    r"valor\s+total\s+(de\s+)?(despesa|despesas|gasto|gastos)|"
+    r"quero\s+saber.*(despesa|gasto)|"
+    r"informa[çc][õo]es.*(despesa|gasto)|"
+    r"qual\s+(foi\s+)?(meu\s+)?(total|valor).*(despesa|gasto)|"
+    r"qual\s+(meu\s+)?saldo|"
+    r"balan[cç]o\s+do\s+m[eê]s",
+    re.IGNORECASE,
+)
 
 
 def _wants_full_summary(message: str) -> bool:
@@ -65,6 +77,26 @@ def _wants_full_summary(message: str) -> bool:
     economizar?" (CONV-03) — both route to ``budget_advice``; this decides
     which of the two answers the message is actually asking for."""
     return bool(_FULL_SUMMARY_MARKERS.search(message))
+
+def _wants_totals(message: str) -> bool:
+    """Perguntas de total do mês: "Quanto gastei este mês?", "qual meu saldo?", etc."""
+    return bool(_TOTALS_MARKERS.search(message))
+
+
+def _format_month_label(month: str) -> str:
+    """Display ``YYYY-MM`` as ``MM/YYYY`` for user-facing replies."""
+    year, month_num = month.split("-", 1)
+    return f"{month_num}/{year}"
+
+
+def _format_totals(balance: dict) -> str:
+    month = balance.get("month") or date.today().strftime("%Y-%m")
+    return (
+        f"Totais de **{_format_month_label(month)}**:\n"
+        f'- Receita: R$ {balance["total_income"]}\n'
+        f'- Despesas: R$ {balance["total_expense"]}\n'
+        f'- Saldo: R$ {balance["balance"]}'
+    )
 
 
 def _needs_attention(category: dict) -> bool:
@@ -123,11 +155,17 @@ def budget_advice(
     month: str | None = None,
     *,
     get_summary: Callable[..., dict] | None = None,
+    get_balance: Callable[..., dict] | None = None,
     message: str = "",
 ) -> AgentResponse:
     """Especialista Orçamento: resumo (BUD-03 AC3) ou alertas priorizados (CONV-03, CONV-04)."""
+    resolved_month = month or date.today().strftime("%Y-%m")
+    if message and _wants_totals(message):
+        fetch_balance = get_balance if get_balance is not None else _get_balance
+        return AgentResponse(text=_format_totals(fetch_balance(user_id=user_id, month=resolved_month)))
+
     fetch = get_summary if get_summary is not None else _get_budget_summary
-    summary = fetch(user_id=user_id, month=month or date.today().strftime("%Y-%m"))
+    summary = fetch(user_id=user_id, month=resolved_month)
     if not summary["has_income"]:
         return AgentResponse(text=NO_INCOME_ADVICE)
     if _wants_full_summary(message):
@@ -135,7 +173,16 @@ def budget_advice(
     return AgentResponse(text=_format_advice(summary["categories"]))
 
 
-def orcamento_node(state: AgentState, *, get_summary: Callable[..., dict] | None = None) -> dict:
+def orcamento_node(
+    state: AgentState,
+    *,
+    get_summary: Callable[..., dict] | None = None,
+    get_balance: Callable[..., dict] | None = None,
+) -> dict:
     """LangGraph node: resposta do especialista Orçamento (BUD-03, CONV-03, CONV-04)."""
     message = state["messages"][-1].content
-    return {"final_response": budget_advice(state["user_id"], get_summary=get_summary, message=message)}
+    return {
+        "final_response": budget_advice(
+            state["user_id"], get_summary=get_summary, get_balance=get_balance, message=message
+        )
+    }

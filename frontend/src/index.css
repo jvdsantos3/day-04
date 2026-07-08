@@ -37,6 +37,11 @@ select {
   font: inherit;
 }
 
+select option {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
 ::selection {
   background: rgba(101, 247, 176, 0.28);
   color: #ffffff;

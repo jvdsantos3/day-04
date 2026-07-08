@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { useToast } from "@/components/Toast";
+import { apiFetch, readApiError } from "@/lib/api";
 import type { DashboardSummary, Transaction } from "@/types/api";
 import Money from "@/components/Money";
 import CategoryCard from "@/components/CategoryCard";
@@ -22,10 +24,15 @@ async function fetchSummary(month: string): Promise<DashboardSummary> {
 
 class InvalidMonthError extends Error {}
 
-async function fetchTransactions(month: string, category: string): Promise<Transaction[]> {
+async function fetchTransactions(
+  month: string,
+  category: string,
+  type: string,
+): Promise<Transaction[]> {
   const params = new URLSearchParams();
   if (month) params.set("month", month);
   if (category) params.set("category", category);
+  if (type) params.set("type", type);
 
   const response = await apiFetch(`/transactions?${params.toString()}`);
   if (response.status === 400) {
@@ -41,9 +48,14 @@ async function fetchTransactions(month: string, category: string): Promise<Trans
 }
 
 export default function Dashboard() {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const initialMonth = currentMonth();
   const [month, setMonth] = useState(initialMonth);
   const [category, setCategory] = useState("");
+  const [type, setType] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null);
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ["summary", month],
@@ -55,10 +67,48 @@ export default function Dashboard() {
     isLoading: transactionsLoading,
     error: transactionsError,
   } = useQuery({
-    queryKey: ["transactions", month, category],
-    queryFn: () => fetchTransactions(month, category),
+    queryKey: ["transactions", month, category, type],
+    queryFn: () => fetchTransactions(month, category, type),
     retry: false,
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (transactionId: string) => {
+      const response = await apiFetch(`/transactions/${transactionId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error(
+          await readApiError(response, "Falha ao excluir transação"),
+        );
+      }
+    },
+    onSuccess: () => {
+      showToast("Transação excluída com sucesso.", "success");
+      setPendingDelete(null);
+    },
+    onError: (error) => {
+      showToast(
+        error instanceof Error ? error.message : "Falha ao excluir transação",
+        "error",
+      );
+    },
+    onSettled: () => {
+      setDeletingId(null);
+      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      void queryClient.invalidateQueries({ queryKey: ["summary"] });
+    },
+  });
+
+  function handleDeleteRequest(transaction: Transaction) {
+    setPendingDelete(transaction);
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setDeletingId(pendingDelete.id);
+    await deleteMutation.mutateAsync(pendingDelete.id);
+  }
 
   // Edge case do spec: mês em formato inválido -> API 400 -> reseta para o
   // mês atual (onError foi removido do useQuery na v5; useEffect é o padrão
@@ -193,8 +243,10 @@ export default function Dashboard() {
           <TransactionFilters
             month={month}
             category={category}
+            type={type}
             onMonthChange={setMonth}
             onCategoryChange={setCategory}
+            onTypeChange={setType}
           />
         </div>
 
@@ -203,9 +255,31 @@ export default function Dashboard() {
             Carregando transações...
           </div>
         ) : (
-          <TransactionTable transactions={transactions ?? []} />
+          <TransactionTable
+            transactions={transactions ?? []}
+            onDelete={handleDeleteRequest}
+            deletingId={deletingId}
+          />
         )}
       </section>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Excluir transação?"
+        description={
+          pendingDelete
+            ? `A transação "${pendingDelete.description}" será removida permanentemente.`
+            : ""
+        }
+        confirmLabel="Excluir"
+        loading={deletingId !== null}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => {
+          if (deletingId === null) {
+            setPendingDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }

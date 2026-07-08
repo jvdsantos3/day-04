@@ -302,3 +302,80 @@ def test_orcamento_node_routes_summary_question_to_full_summary():
 
     assert "custos_fixos" in result["final_response"].text
     assert "conforto" in result["final_response"].text  # unconditional — not dropped
+
+
+def test_budget_advice_totals_matches_valor_total_de_despesas():
+    seen: dict = {}
+
+    def _fake_get_balance(**kwargs):
+        seen.update(kwargs)
+        return {
+            "month": kwargs.get("month"),
+            "total_income": "5000.00",
+            "total_expense": "800.00",
+            "balance": "4200.00",
+        }
+
+    response = orcamento.budget_advice(
+        "u1",
+        "2026-07",
+        get_balance=_fake_get_balance,
+        message="Quero saber o valor total de despesas",
+    )
+
+    assert seen["user_id"] == "u1"
+    assert "07/2026" in response.text
+    assert "800.00" in response.text
+    assert "Despesas" in response.text
+
+
+def test_budget_advice_totals_uses_get_balance_when_user_asks_how_much_spent():
+    seen: dict = {}
+
+    def _fake_get_balance(**kwargs):
+        seen.update(kwargs)
+        return {
+            "month": kwargs.get("month"),
+            "total_income": "5000.00",
+            "total_expense": "1234.56",
+            "balance": "3765.44",
+        }
+
+    response = orcamento.budget_advice(
+        "u1",
+        "2026-07",
+        get_balance=_fake_get_balance,
+        message="Quanto gastei este mês?",
+    )
+
+    assert seen["user_id"] == "u1"
+    assert seen["month"] == "2026-07"
+    assert "07/2026" in response.text
+    assert "Despesas" in response.text
+    assert "1234.56" in response.text
+
+
+def test_orcamento_node_totals_question_uses_get_balance():
+    seen: dict = {}
+
+    def _fake_get_balance(**kwargs):
+        seen.update(kwargs)
+        return {"month": kwargs.get("month"), "total_income": "0", "total_expense": "10", "balance": "-10"}
+
+    state = {
+        "messages": [HumanMessage(content="Qual meu saldo do mês?")],
+        "user_id": "u1",
+        "session_id": "s1",
+        "intent": "budget_advice",
+        "retrieved_context": [],
+        "pending_action": None,
+        "agent_notes": [],
+        "last_tool_results": None,
+        "validation_attempts": 0,
+        "final_response": None,
+    }
+
+    result = orcamento.orcamento_node(state, get_balance=_fake_get_balance)
+
+    assert seen["user_id"] == "u1"
+    assert "Saldo" in result["final_response"].text

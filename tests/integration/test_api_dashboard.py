@@ -369,3 +369,72 @@ def test_transactions_explicit_empty_month_means_all_time(client):
     assert resp.status_code == 200
     descriptions = {r["description"] for r in resp.json()["transactions"]}
     assert descriptions == {"aluguel de julho", "aluguel de junho", "cinema"}
+
+
+def test_transactions_filtered_by_type(client):
+    test_client, TestingSession = client
+    _register(test_client)
+    user = _user(TestingSession)
+    _add(
+        TestingSession, user.id,
+        date=date(2026, 7, 1), description="Salário",
+        type=TransactionType.INCOME, amount=Decimal("5000.00"), category=None,
+    )
+    _add(
+        TestingSession, user.id,
+        date=date(2026, 7, 2), description="Aluguel",
+        type=TransactionType.EXPENSE, amount=Decimal("1500.00"),
+        category=BudgetCategory.FIXED,
+    )
+
+    resp = test_client.get("/api/transactions", params={"month": MONTH, "type": "receita"})
+
+    assert resp.status_code == 200
+    rows = resp.json()["transactions"]
+    assert [r["description"] for r in rows] == ["Salário"]
+    assert rows[0]["type"] == "receita"
+
+
+def test_transactions_invalid_type_returns_400(client):
+    test_client, _ = client
+    _register(test_client)
+
+    resp = test_client.get("/api/transactions", params={"type": "invalido"})
+
+    assert resp.status_code == 400
+    assert resp.json() == {"detail": "Tipo inválido"}
+
+
+def test_delete_transaction_requires_auth(client):
+    test_client, _ = client
+    resp = test_client.delete("/api/transactions/00000000-0000-0000-0000-000000000001")
+    assert resp.status_code == 401
+
+
+def test_delete_transaction_removes_row(client):
+    test_client, TestingSession = client
+    _register(test_client)
+    user = _user(TestingSession)
+    _add(
+        TestingSession, user.id,
+        date=date(2026, 7, 2), description="Cinema",
+        type=TransactionType.EXPENSE, amount=Decimal("50.00"),
+        category=BudgetCategory.PLEASURES,
+    )
+    with TestingSession() as db:
+        transaction_id = db.scalar(select(Transaction.id).where(Transaction.user_id == user.id))
+
+    resp = test_client.delete(f"/api/transactions/{transaction_id}")
+    assert resp.status_code == 204
+
+    listed = test_client.get("/api/transactions", params={"month": MONTH})
+    assert listed.json()["transactions"] == []
+
+
+def test_delete_transaction_not_found_returns_404(client):
+    test_client, _ = client
+    _register(test_client)
+
+    resp = test_client.delete("/api/transactions/00000000-0000-0000-0000-000000000099")
+    assert resp.status_code == 404
+    assert resp.json() == {"detail": "Transação não encontrada"}

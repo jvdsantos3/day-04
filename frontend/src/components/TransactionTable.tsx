@@ -1,12 +1,19 @@
 import type { Transaction } from "@/types/api";
 import Money from "@/components/Money";
 
+const FOCUS_RING =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#65f7b0]";
+
 // Tabela de transações filtradas (UI-DASH-03). Lista vazia -> estado vazio
 // com mensagem clara em vez de uma tabela sem linhas (AC5).
 export default function TransactionTable({
   transactions,
+  onDelete,
+  deletingId = null,
 }: {
   transactions: Transaction[];
+  onDelete?: (transaction: Transaction) => void;
+  deletingId?: string | null;
 }) {
   if (transactions.length === 0) {
     return (
@@ -32,6 +39,7 @@ export default function TransactionTable({
               <th className="px-5 py-4">Categoria</th>
               <th className="px-5 py-4">Tipo</th>
               <th className="px-5 py-4 text-right">Valor</th>
+              {onDelete && <th className="px-5 py-4 text-right">Ações</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
@@ -66,6 +74,19 @@ export default function TransactionTable({
                 >
                   <Money value={t.amount} />
                 </td>
+                {onDelete && (
+                  <td className="px-5 py-4 text-right">
+                    <button
+                      type="button"
+                      onClick={() => onDelete(t)}
+                      disabled={deletingId === t.id}
+                      aria-label={`Excluir transação ${t.description}`}
+                      className={`rounded-xl border border-rose-300/30 bg-rose-400/10 px-3 py-1.5 text-xs font-bold text-rose-100 transition hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING}`}
+                    >
+                      {deletingId === t.id ? "Excluindo..." : "Excluir"}
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

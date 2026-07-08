@@ -160,8 +160,8 @@ export default function Register() {
                 Um assistente que registra, classifica e explica.
               </h2>
               <p className="mt-5 text-sm leading-6 text-slate-300">
-                Ideal para mostrar LangGraph, agentes especialistas, contratos
-                e guardrails com uma interface que sustenta a narrativa.
+                Registre transações pelo chat, acompanhe seu orçamento e
+                entenda para onde vai o seu dinheiro.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3">

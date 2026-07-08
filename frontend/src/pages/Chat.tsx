@@ -44,7 +44,7 @@ export default function Chat() {
 
         <div className="mt-8 space-y-3">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
-            Demonstrações rápidas
+            Sugestões
           </p>
           {QUICK_PROMPTS.map((prompt) => (
             <button
@@ -64,7 +64,7 @@ export default function Chat() {
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
           <div>
             <p className="text-sm font-bold text-white">Chat financeiro</p>
-            <p className="text-xs text-slate-400">SSE + LangGraph + ferramentas financeiras</p>
+            <p className="text-xs text-slate-400">Respostas com base nos seus dados financeiros</p>
           </div>
           <span className="rounded-full bg-emerald-300/15 px-3 py-1 text-xs font-black uppercase tracking-widest text-emerald-100">
             online

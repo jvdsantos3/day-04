@@ -17,6 +17,20 @@ from pydantic import BaseModel, Field, model_validator
 from financial_assistant.domain.models import BudgetCategory, TransactionType
 
 
+class TransactionExtraction(BaseModel):
+    """LLM structured output for natural-language transaction parsing."""
+
+    type: TransactionType | None = None
+    amount: Decimal | None = Field(default=None, gt=Decimal("0"))
+    description: str | None = Field(default=None, min_length=1, max_length=255)
+
+
+class CategoryExtraction(BaseModel):
+    """LLM structured output for expense categorization."""
+
+    category: BudgetCategory | None = None
+
+
 class TransactionCreate(BaseModel):
     """Payload for creating a transaction (income or expense)."""
 

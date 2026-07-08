@@ -12,10 +12,11 @@ consumer) were moved here.
 
 from __future__ import annotations
 
+import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from financial_assistant.api.schemas import (
@@ -26,11 +27,12 @@ from financial_assistant.api.schemas import (
 )
 from financial_assistant.auth.dependencies import get_current_user_api
 from financial_assistant.db.session import get_db
-from financial_assistant.domain.models import BudgetCategory, User
+from financial_assistant.domain.models import BudgetCategory, TransactionType, User
 from financial_assistant.domain.repositories.transaction_repository import (
     TransactionRepository,
 )
 from financial_assistant.domain.services.budget_service import BudgetService
+from financial_assistant.vector.indexer import delete_transaction_embedding
 
 router = APIRouter()
 
@@ -55,6 +57,15 @@ def _parse_category(category: str | None) -> BudgetCategory | None:
         return BudgetCategory(category)
     except ValueError:
         raise HTTPException(status_code=400, detail="Categoria inválida") from None
+
+
+def _parse_type(type_: str | None) -> TransactionType | None:
+    if not type_:
+        return None
+    try:
+        return TransactionType(type_)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Tipo inválido") from None
 
 
 def _current_month() -> str:
@@ -119,18 +130,24 @@ def dashboard_summary(
 def transactions(
     month: str | None = None,
     category: str | None = None,
+    type: str | None = None,
     user: User = Depends(get_current_user_api),
     db: Session = Depends(get_db),
 ) -> TransactionListOut:
     """List the user's transactions, optionally filtered (API-DASH-02).
 
     An invalid ``category`` slug -> 400 "Categoria inválida" (``_parse_category``).
+    An invalid ``type`` -> 400 "Tipo inválido" (``_parse_type``).
     An invalid ``month`` format -> 400 "Mês inválido" (``_validate_month``).
     """
     category_filter = _parse_category(category)
+    type_filter = _parse_type(type)
     validated_month = _validate_month(month)
     rows = TransactionRepository(db).list(
-        user.id, month=validated_month or None, category=category_filter
+        user.id,
+        month=validated_month or None,
+        category=category_filter,
+        type=type_filter,
     )
     return TransactionListOut(
         transactions=[
@@ -145,3 +162,16 @@ def transactions(
             for t in rows
         ]
     )
+
+
+@router.delete("/transactions/{transaction_id}", status_code=204)
+def delete_transaction(
+    transaction_id: uuid.UUID,
+    user: User = Depends(get_current_user_api),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Delete one of the user's transactions and remove its ChromaDB embedding."""
+    TransactionRepository(db).delete(user.id, transaction_id)
+    db.commit()
+    delete_transaction_embedding(user.id, transaction_id)
+    return Response(status_code=204)

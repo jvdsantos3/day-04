@@ -44,7 +44,7 @@ SYSTEM_PROMPT = (
     "estritamente estes padrões:\n"
     '- "plano de gastos", "como organizar" -> explain_budget\n'
     '- "qual categoria", "se encaixa" -> categorize\n'
-    '- "economizar", "prestar atenção", "orçamento" -> budget_advice\n'
+    '- "economizar", "prestar atenção", "orçamento", "quanto gastei", "total gasto", "saldo do mês" -> budget_advice\n'
     '- "gastei", "recebi", "registre", "adicione", "adicionar", '
     '"receita", "despesa" -> register_transaction\n'
     "IMPORTANTE: se a mensagem for uma PERGUNTA pedindo a categoria de um "

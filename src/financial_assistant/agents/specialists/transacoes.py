@@ -3,47 +3,44 @@
 Cobre dois intents roteados pelo Orquestrador (T20) para este especialista:
 
 - ``register_transaction`` (CHAT-01/02/03): extrai tipo/valor/descrição da
-  mensagem e persiste via ``finance-mcp.create_transaction``. Despesas exigem
-  categoria inferida via ``categorize``; receitas são sempre persistidas com
-  ``category=None`` (CHAT-02). Quando valor ou categoria não puderem ser
-  inferidos, retorna uma pergunta de clarificação e **não persiste**
-  (CHAT-03).
+  mensagem via LLM (saída estruturada) e persiste via
+  ``finance-mcp.create_transaction``. Despesas exigem categoria inferida via
+  ``categorize``; receitas são sempre persistidas com ``category=None``
+  (CHAT-02). Quando valor ou categoria não puderem ser inferidos, retorna uma
+  pergunta de clarificação e **não persiste** (CHAT-03).
 - ``categorize`` (CONV-02): infere a categoria e explica o raciocínio, mas
   **não registra automaticamente** — retorna ``action="offer_register"`` para
   o usuário confirmar.
 
-Categorização (ambos os fluxos) usa ``chroma-mcp.find_similar_transactions``
-(T17), que já combina o histórico do usuário (``transactions``) com os
-exemplos rotulados globais (``category_examples``, T15 — inclui
-``"pedido de delivery" -> prazeres``), ordenados por score.
-
-Spec-precision gap: a extração de tipo/valor/descrição da mensagem em
-linguagem natural não é definida no design — implementada via regex
-determinístico (marcadores "gastei/paguei/comprei" ou menção explícita a
-"despesa" -> despesa, "recebi/ganhei" ou menção explícita a
-"receita/salário" -> receita; mensagens com valor + descrição e sem marcador
-de receita são tratadas como despesa; valor via padrão ``R$ N`` ou
-``N reais``) em vez de LLM, mantendo os testes unitários rápidos e sem mock
-de chat model.
+Extração e categorização usam LLM com saída estruturada. A categorização
+tenta primeiro ``chroma-mcp.find_similar_transactions`` (histórico + exemplos
+rotulados); se não houver match, recorre ao LLM.
 """
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from typing import Callable
 
+from langchain_core.language_models.chat_models import BaseChatModel
+
+from financial_assistant.agents.orchestrator import get_orchestrator_llm
 from financial_assistant.agents.state import AgentState
+from financial_assistant.config import get_settings
 from financial_assistant.contracts.agent_response import AgentResponse, Intent
+from financial_assistant.contracts.transaction import CategoryExtraction, TransactionExtraction
 from financial_assistant.domain.models import BudgetCategory, TransactionType
 from mcp_servers.chroma.server import find_similar_transactions as _find_similar_transactions
 from mcp_servers.finance.server import create_transaction as _create_transaction
 
-CLARIFICATION_TEXT = (
-    "Não consegui identificar o valor ou a categoria dessa transação. Pode "
-    "confirmar quanto foi e do que se trata?"
+CLARIFICATION_AMOUNT = (
+    "Não consegui identificar o valor dessa transação. Pode informar quanto foi?"
+)
+CLARIFICATION_CATEGORY = (
+    "Entendi o valor, mas não consegui categorizar essa despesa. "
+    "Pode descrever melhor do que se trata?"
 )
 
 _CATEGORY_RATIONALE: dict[BudgetCategory, str] = {
@@ -53,136 +50,105 @@ _CATEGORY_RATIONALE: dict[BudgetCategory, str] = {
     BudgetCategory.KNOWLEDGE: "é um investimento em desenvolvimento pessoal ou uma meta",
     BudgetCategory.PLEASURES: "é um gasto com lazer, alimentação fora de casa ou entretenimento",
 }
-_CATEGORY_KEYWORD_FALLBACKS: tuple[tuple[BudgetCategory, tuple[str, ...]], ...] = (
-    (
-        BudgetCategory.PLEASURES,
-        (
-            "almoço",
-            "almoco",
-            "jantar",
-            "restaurante",
-            "delivery",
-            "lanche",
-            "cinema",
-            "lazer",
-        ),
-    ),
+
+_EXTRACTION_SYSTEM_PROMPT = (
+    "Você extrai dados de transações financeiras a partir de mensagens em "
+    "português natural. Identifique:\n"
+    '- type: "receita" para entradas (salário, vendas, depósitos) ou '
+    '"despesa" para saídas (compras, pagamentos, gastos)\n'
+    "- amount: valor numérico em reais, sem símbolo R$\n"
+    "- description: descrição curta e útil do que é a transação "
+    "(ex.: salário, almoço, mercado — não repita só 'receita' ou 'despesa' "
+    "se houver detalhe melhor na mensagem)\n"
+    "Exemplos:\n"
+    '- "Adicione uma receita de 3000 esse mês" -> receita, 3000, "receita"\n'
+    '- "gastei 50 no mercado" -> despesa, 50, "mercado"\n'
+    '- "recebi 5000 de salário" -> receita, 5000, "salário"\n'
+    '- "lança 120 de delivery" -> despesa, 120, "delivery"\n'
+    "Se não houver valor numérico claro, deixe amount como null. "
+    "Se o tipo for ambíguo, deixe type como null. "
+    "Se não houver descrição útil, deixe description como null."
 )
 
-_EXPENSE_MARKERS = ("gastei", "paguei", "comprei", "despesa", "gasto")
-_INCOME_MARKERS = ("recebi", "ganhei", "receita", "salário", "salario")
-
-_AMOUNT_PATTERN = re.compile(
-    r"r\$\s*(?P<amt1>\d+(?:[.,]\d{1,2})?)|"
-    r"(?P<amt2>\d+(?:[.,]\d{1,2})?)\s*reais|"
-    r"(?P<amt3>\d+(?:[.,]\d{1,2})?)(?=\s+(?:de|do|da|em|no|na|num|numa|com)\b)",
-    re.IGNORECASE,
-)
-_VERB_PREFIX = re.compile(r"^(gastei|paguei|comprei|recebi|ganhei)\b\s*", re.IGNORECASE)
-_REGISTER_PREFIX = re.compile(
-    r"^(registre|registrar|registra|lance|adicione|adicionar|inclua|incluir)\b\s*",
-    re.IGNORECASE,
-)
-_TYPE_PREFIX = re.compile(
-    r"^(?:uma?\s+|um\s+)?(?:despesa|receita|gasto)\b\s*(?:de\b\s*)?",
-    re.IGNORECASE,
-)
-_DESCRIPTION_CONNECTOR_PREFIX = re.compile(
-    r"^(?:com|em|no|na|num|numa|de|do|da)\b\s*",
-    re.IGNORECASE,
+_CATEGORIZATION_SYSTEM_PROMPT = (
+    "Você categoriza despesas pessoais em uma das cinco categorias do método "
+    "das caixinhas:\n"
+    "- custos_fixos: despesas essenciais e recorrentes (aluguel, contas, "
+    "transporte fixo, mercado básico)\n"
+    "- conforto: qualidade de vida não essencial (roupas, eletrônicos, "
+    "assinaturas de streaming)\n"
+    "- investimentos: aportes para o futuro (poupança, ações, previdência)\n"
+    "- conhecimento_metas: desenvolvimento pessoal e metas (cursos, livros, "
+    "certificações)\n"
+    "- prazeres: lazer, alimentação fora, delivery, cinema, entretenimento\n"
+    "Retorne null se não for possível inferir com confiança."
 )
 
 
 @dataclass(frozen=True)
 class ParsedTransaction:
-    """Best-effort extraction of a transaction's fields from a chat message."""
+    """Fields extracted from a natural-language transaction message."""
 
     type: TransactionType
     amount: Decimal
     description: str
 
 
-def _infer_type(message: str) -> TransactionType | None:
-    lowered = message.lower()
-    if any(marker in lowered for marker in _INCOME_MARKERS):
-        return TransactionType.INCOME
-    if any(marker in lowered for marker in _EXPENSE_MARKERS):
-        return TransactionType.EXPENSE
-    return None
-
-
-def _extract_amount(message: str) -> tuple[Decimal, tuple[int, int]] | None:
-    match = _AMOUNT_PATTERN.search(message)
-    if match is None:
+def extract_transaction(
+    message: str, llm: BaseChatModel
+) -> ParsedTransaction | None:
+    """Extract type, amount and description from ``message`` via structured LLM output."""
+    structured_model = llm.with_structured_output(
+        TransactionExtraction, method="function_calling"
+    )
+    extracted = structured_model.invoke(
+        [("system", _EXTRACTION_SYSTEM_PROMPT), ("human", message)]
+    )
+    if (
+        extracted.type is None
+        or extracted.amount is None
+        or extracted.amount <= 0
+        or not (extracted.description or "").strip()
+    ):
         return None
-    raw = match.group("amt1") or match.group("amt2") or match.group("amt3")
-    return Decimal(raw.replace(",", ".")), match.span()
+    return ParsedTransaction(
+        type=extracted.type,
+        amount=extracted.amount,
+        description=extracted.description.strip(),
+    )
 
 
-def _fallback_description(message: str) -> str:
-    lowered = message.lower()
-    if "salário" in lowered or "salario" in lowered:
-        return "salário"
-    if "receita" in lowered:
-        return "receita"
-    if "despesa" in lowered or "gasto" in lowered:
-        return "despesa"
-    return message.strip()
+def _categorize_with_llm(description: str, llm: BaseChatModel) -> BudgetCategory | None:
+    structured_model = llm.with_structured_output(
+        CategoryExtraction, method="function_calling"
+    )
+    result = structured_model.invoke(
+        [("system", _CATEGORIZATION_SYSTEM_PROMPT), ("human", description)]
+    )
+    return result.category
 
 
-def _clean_description(message: str, span: tuple[int, int]) -> str:
-    start, end = span
-    remainder = re.sub(r"\s+", " ", message[:start] + message[end:]).strip()
-    remainder = _VERB_PREFIX.sub("", remainder).strip(" ,.")
-    remainder = _REGISTER_PREFIX.sub("", remainder).strip(" ,.")
-    remainder = _TYPE_PREFIX.sub("", remainder).strip(" ,.")
-    remainder = _DESCRIPTION_CONNECTOR_PREFIX.sub("", remainder).strip(" ,.")
-    return remainder or _fallback_description(message)
-
-
-def parse_transaction_message(message: str) -> ParsedTransaction | None:
-    """Extract type/amount/description from ``message``.
-
-    Returns ``None`` when the type or the amount can't be inferred — callers
-    must ask for clarification instead of persisting (CHAT-03).
-    """
-    extracted = _extract_amount(message)
-    if extracted is None:
+def _extraction_llm() -> BaseChatModel | None:
+    if not get_settings().deepseek_api_key:
         return None
-    amount, span = extracted
-    if amount <= 0:
-        return None
-    description = _clean_description(message, span)
-    type_ = _infer_type(message)
-    if type_ is None and description != message.strip():
-        type_ = TransactionType.EXPENSE
-    if type_ is None:
-        return None
-    return ParsedTransaction(type=type_, amount=amount, description=description)
+    return get_orchestrator_llm()
 
 
 def categorize(
     description: str,
     user_id: str,
     find_similar: Callable[..., list[dict]] | None = None,
+    llm: BaseChatModel | None = None,
 ) -> BudgetCategory | None:
-    """Infer the BudgetCategory for ``description`` via chroma-mcp's find_similar_transactions.
-
-    Picks the top-scored hit that carries a ``category`` (results already come
-    sorted by score, T17). Returns ``None`` when nothing matches — callers
-    must ask for clarification instead of persisting an uncategorized expense
-    (CHAT-03).
-    """
+    """Infer the BudgetCategory for ``description`` via Chroma, then LLM fallback."""
     finder = find_similar if find_similar is not None else _find_similar_transactions
     hits = finder(user_id=user_id, description=description)
     for hit in hits:
         category_value = hit.get("metadata", {}).get("category")
         if category_value:
             return BudgetCategory(category_value)
-    lowered_description = description.lower()
-    for category, keywords in _CATEGORY_KEYWORD_FALLBACKS:
-        if any(keyword in lowered_description for keyword in keywords):
-            return category
+    if llm is not None:
+        return _categorize_with_llm(description, llm)
     return None
 
 
@@ -201,11 +167,18 @@ def _categorization_explanation(category: BudgetCategory) -> str:
 
 
 def _handle_categorize(
-    message: str, user_id: str, *, find_similar: Callable[..., list[dict]] | None = None
+    message: str,
+    user_id: str,
+    *,
+    find_similar: Callable[..., list[dict]] | None = None,
+    llm: BaseChatModel | None = None,
 ) -> AgentResponse:
-    category = categorize(message, user_id, find_similar=find_similar)
+    model = llm if llm is not None else _extraction_llm()
+    if model is None:
+        return AgentResponse(text=CLARIFICATION_CATEGORY, action="none")
+    category = categorize(message, user_id, find_similar=find_similar, llm=model)
     if category is None:
-        return AgentResponse(text=CLARIFICATION_TEXT, action="none")
+        return AgentResponse(text=CLARIFICATION_CATEGORY, action="none")
     return AgentResponse(
         text=_categorization_explanation(category),
         suggested_category=category,
@@ -219,16 +192,23 @@ def _handle_register(
     *,
     find_similar: Callable[..., list[dict]] | None = None,
     create: Callable[..., dict] | None = None,
+    llm: BaseChatModel | None = None,
 ) -> AgentResponse:
-    parsed = parse_transaction_message(message)
+    model = llm if llm is not None else _extraction_llm()
+    if model is None:
+        return AgentResponse(text=CLARIFICATION_AMOUNT, action="none")
+
+    parsed = extract_transaction(message, model)
     if parsed is None:
-        return AgentResponse(text=CLARIFICATION_TEXT, action="none")
+        return AgentResponse(text=CLARIFICATION_AMOUNT, action="none")
 
     category: BudgetCategory | None = None
     if parsed.type == TransactionType.EXPENSE:
-        category = categorize(parsed.description, user_id, find_similar=find_similar)
+        category = categorize(
+            parsed.description, user_id, find_similar=find_similar, llm=model
+        )
         if category is None:
-            return AgentResponse(text=CLARIFICATION_TEXT, action="none")
+            return AgentResponse(text=CLARIFICATION_CATEGORY, action="none")
 
     creator = create if create is not None else _create_transaction
     created = creator(
@@ -252,12 +232,21 @@ def transacoes_node(
     *,
     find_similar: Callable[..., list[dict]] | None = None,
     create: Callable[..., dict] | None = None,
+    llm: BaseChatModel | None = None,
 ) -> dict:
     """LangGraph node: dispatch to categorize-only or register-and-persist (ORCH-01)."""
     message = state["messages"][-1].content
     user_id = state["user_id"]
     if state.get("intent") == Intent.CATEGORIZE.value:
-        response = _handle_categorize(message, user_id, find_similar=find_similar)
+        response = _handle_categorize(
+            message, user_id, find_similar=find_similar, llm=llm
+        )
     else:
-        response = _handle_register(message, user_id, find_similar=find_similar, create=create)
+        response = _handle_register(
+            message,
+            user_id,
+            find_similar=find_similar,
+            create=create,
+            llm=llm,
+        )
     return {"final_response": response}

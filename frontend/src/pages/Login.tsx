@@ -66,14 +66,15 @@ export default function Login() {
                 Controle seu dinheiro com um agente ao lado.
               </h2>
               <p className="mt-5 text-sm leading-6 text-slate-300">
-                Dashboard, orçamento e chat financeiro prontos para uma demo
-                clara e convincente.
+                Acompanhe gastos, orçamento por categoria e converse com o
+                assistente em um só lugar.
               </p>
             </div>
             <div className="rounded-3xl border border-emerald-300/20 bg-emerald-300/10 p-5">
-              <p className="text-sm font-bold text-emerald-100">Demo preparada</p>
+              <p className="text-sm font-bold text-emerald-100">Tudo integrado</p>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                Entre para mostrar registros, categorias e respostas do assistente.
+                Registre movimentações, acompanhe categorias e receba orientação
+                do assistente.
               </p>
             </div>
           </div>
